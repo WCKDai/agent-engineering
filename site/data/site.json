@@ -6,8 +6,8 @@
   "tagline": "Engineering values, task skills and verifiable tools for agents. Evidence over assertion.",
   "version": "1.2.0",
   "source": {
-    "commit": "b40220b",
-    "committed_at": "2026-11-02T10:37:38+01:00",
+    "commit": "793a066",
+    "committed_at": "2026-11-02T10:39:45+01:00",
     "dirty": false,
     "content_sha256": "31967ebab5b80f882542557cddc456d7aefe5a693e26fa9c527308520ad32230"
   },
