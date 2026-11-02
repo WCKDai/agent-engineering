@@ -78,6 +78,14 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `agent-sandboxing` | Isolated execution, scoped short-lived credentials, egress allowlist. |
 | `autopilot-readiness` | Attended → supervised autopilot → autopilot, one repository at a time. |
 | `improvement-loop` | Weekly: worst bottleneck, one change, measured, kept or reverted. |
+| `safe-migrations` | Deploy-safe schema changes: expand then contract, two-phase deletes, upgrade tests. |
+| `compatibility-and-deprecation` | N-1/N compatibility proven from real artifacts; dated, in-band deprecation. |
+| `progressive-delivery` | Dark launch, stable-hash rollout through reviewed config, revert first. |
+| `test-design` | Which tests to add, at which layer, deterministic; replay and fault injection. |
+| `diff-hygiene` | A diff with only what the task needs: no slop, no generated drift, no new suppressions. |
+| `pull-request-craft` | One problem per PR, short honest description, the repository's attribution policy. |
+| `behavior-review` | Review behavior: equivalent code, failure paths, surfaces, side effects. |
+| `agent-guidance` | Author AGENTS.md and skills: one source, evidence-backed rules, budgets and evals. |
 
 Skills activate from their frontmatter description. They are task-specific; repository rules stay in
 `AGENTS.md`.

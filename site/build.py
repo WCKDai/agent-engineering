@@ -50,6 +50,14 @@ SKILL_META = {
     "agent-sandboxing": {"phase": "plan", "risk": "high", "tags": ["isolation", "credentials", "egress"], "order": 15},
     "autopilot-readiness": {"phase": "report", "risk": "high", "tags": ["autonomy", "tiers", "checklist"], "order": 16},
     "improvement-loop": {"phase": "report", "risk": "low", "tags": ["metrics", "weekly", "bottleneck"], "order": 17},
+    "safe-migrations": {"phase": "implement", "risk": "high", "tags": ["database", "schema", "expand-contract", "upgrade"], "order": 18},
+    "compatibility-and-deprecation": {"phase": "plan", "risk": "high", "tags": ["wire", "n-1", "deprecation", "api"], "order": 19},
+    "progressive-delivery": {"phase": "report", "risk": "high", "tags": ["feature-flags", "rollout", "revert"], "order": 20},
+    "test-design": {"phase": "verify", "risk": "medium", "tags": ["tests", "determinism", "replay", "fault-injection"], "order": 21},
+    "diff-hygiene": {"phase": "implement", "risk": "low", "tags": ["style", "generated", "suppressions", "self-review"], "order": 22},
+    "pull-request-craft": {"phase": "report", "risk": "low", "tags": ["pull-request", "commits", "attribution"], "order": 23},
+    "behavior-review": {"phase": "verify", "risk": "high", "tags": ["review", "side-effects", "surfaces"], "order": 24},
+    "agent-guidance": {"phase": "plan", "risk": "medium", "tags": ["agents-md", "skills", "evals", "prompts"], "order": 25},
 }
 
 

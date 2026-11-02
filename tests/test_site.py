@@ -41,7 +41,7 @@ class SiteTests(unittest.TestCase):
     def test_generated_skills_are_complete(self):
         data = json.loads(DATA.read_text(encoding="utf-8"))
         self.assertEqual(data["schema"], "agent-engineering-site/v1")
-        self.assertEqual(len(data["skills"]), 17)
+        self.assertEqual(len(data["skills"]), 25)
         for skill in data["skills"]:
             self.assertTrue(skill["name"])
             self.assertTrue(skill["description"])
@@ -64,7 +64,7 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(agents["schema"], "agent-engineering/v1")
         self.assertIn("AGENTS.md", agents["start"]["read_first"])
         self.assertIn("eng verify --profile fast", agents["start"]["fast"])
-        self.assertEqual(len(agents["skills"]), 17)
+        self.assertEqual(len(agents["skills"]), 25)
         self.assertGreaterEqual(len(agents["tools"]), 20)
         self.assertTrue(agents["limits"])
         llms = (SITE / "llms.txt").read_text(encoding="utf-8")
@@ -277,7 +277,7 @@ class SiteTests(unittest.TestCase):
             self.assertIn("eng-kit/lib/eng.py", names)
             self.assertIn("eng-kit/AGENTS.md", names)
             self.assertIn("eng-kit/MANIFEST.sha256", names)
-            self.assertEqual(sum(1 for n in names if n.endswith("/SKILL.md")), 17)
+            self.assertEqual(sum(1 for n in names if n.endswith("/SKILL.md")), 25)
             self.assertFalse(any("__pycache__" in n or n.endswith(".pyc") for n in names))
             self.assertFalse(any(".agents/evidence" in n for n in names))
             self.assertFalse(any(n.startswith("eng-kit/site/") for n in names))
