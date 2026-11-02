@@ -275,6 +275,15 @@ class VerifyTierTests(EngTestCase):
         self.assertNotIn("cache", data)
         self.assertTrue(any(u.startswith("cache statistics not recorded") for u in data["verdict"]["unverified"]))
 
+    def test_a_command_that_edits_tracked_files_is_reported(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "edit", "run": "echo changed >> src/lib.py"}]})
+        self.repo.git("add", "-A")
+        self.repo.git("commit", "-qm", "edit config")
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        unverified = self.latest()["verdict"]["unverified"]
+        self.assertIn("working tree changed during verification; commands may have modified files", unverified)
+
     def test_records_without_the_new_fields_still_verify(self):
         self.init_basic()
         logdir = self.tmp / ".agents" / "evidence" / "old"
