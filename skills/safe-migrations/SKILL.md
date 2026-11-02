@@ -20,7 +20,8 @@ deploys.
 
 - The repository's migration tool, its generate and check commands, and its lock/ordering file.
 - How the code deploys: which units deploy atomically, which regions or instances lag, and the
-  oldest version the project still upgrades from.
+  oldest version the project still upgrades from. If releases are not versioned, use the oldest
+  commit still deployed anywhere, or else the previous release tag.
 - A disposable database seeded like production in shape (not in content).
 
 ## Outputs
@@ -34,8 +35,8 @@ deploys.
 ## Permissions and restrictions
 
 Never edit a migration that has been applied anywhere outside your machine; add a new one. Never
-merge both phases of a delete in one pull request or one deploy. Never rename a column in place:
-add the new one, or map the field to the old column name. Raw SQL, disabled safety checks and
+merge both phases of a delete in one pull request or one deploy. Never rename a table or column
+in place: map the new name to the old one, or follow the rename sequence in step 5. Raw SQL, disabled safety checks and
 long-running statements in the deploy path need the named owner's approval. No production data in
 fixtures or test databases. Applying a migration to a shared or production database is a
 production change and needs explicit human approval.
@@ -47,29 +48,40 @@ production change and needs explicit human approval.
    or transform always follows an expand that has already deployed.
 2. Generate the migration with the tool; do not hand-write what the tool can generate. Read the
    SQL/DDL it will run, not only the model diff.
-3. Keep deploy-time statements fast. Anything that scans or locks a large table (index builds,
-   backfills) runs as a separate post-deploy step, in batches, after every instance has the code.
+3. Keep deploy-time statements under the repository's stated limit (Sentry's is 5 seconds; if
+   none is stated, ask). Measure on a table at least as large as the largest production table, or
+   state the size you used. Anything that scans or locks a large table (index builds, backfills)
+   runs as a separate post-deploy step, in batches, after every instance has the code.
 4. For a drop: phase 1 stops the code reading and writing the field and removes it from the model
    (column stays, nullable, no foreign key); phase 2, a separate stacked PR containing nothing
    else, drops it after phase 1 has deployed everywhere.
-5. For a stored format change: teach the reader the new form first, ship it, then start writing
+5. For a rename, prefer mapping the new name in code to the existing table or column. If the
+   physical rename is required, it is a sequence of deploys: add the new column or table; write to
+   both; backfill old rows; switch reads to the new one; stop writing the old one and remove its
+   references; drop it (as phase 2 of step 4).
+6. For a stored format change: teach the reader the new form first, ship it, then start writing
    the new form. Version the record so the reader branches on the stored version, never on the
    date or a global switch.
-6. Keep the migration order conflict-free: if the tool keeps a lock or latest-migration file,
+7. Keep the migration order conflict-free: if the tool keeps a lock or latest-migration file,
    update it so concurrent migrations conflict in git rather than at deploy.
-7. Prove schema and models agree: run the tool's "generate" or "check" and require an empty diff
+8. Prove schema and models agree: run the tool's "generate" or "check" and require an empty diff
    (`git diff --exit-code`).
-8. Test the upgrade path from the oldest supported version to the head on the disposable
+9. Test the upgrade path from the oldest supported version to the head on the disposable
    database, then run the code at N-1 against the migrated schema.
-9. Record the rollback: which code version can run on the new schema, and what restores data if a
-   transform was wrong.
+10. Record the rollback. An expand-only change rolls back by redeploying N-1 code, which step 9
+    proved works on the new schema; no down migration is needed. A contract or transform needs a
+    tested way back: a down migration where the tool supports one, or a restore of the affected
+    data, tested on a copy including a half-migrated state. If neither is possible, it needs a
+    backup and explicit owner approval.
 
 ## Verification
 
 - Regenerate-and-diff is empty; the migration-order check passes.
 - Upgrade from the oldest supported version and from the previous release both succeed.
 - The previous release's code runs against the new schema (its tests or a smoke run).
-- No statement in the deploy path exceeds the project's time budget on a realistically sized table.
+- No deploy-path statement exceeds the stated limit on a table of the stated size.
+- The rollback in step 10 was exercised: N-1 code on the new schema, or the down migration or
+  restore on a copy.
 - A destructive phase is in its own PR and states which deployed revision it depends on.
 
 ## Failure and escalation
@@ -88,13 +100,14 @@ escape hatch are linked.
 
 ## Sources
 
-- Sentry, two-phase deletes and no in-place renames:
+- Sentry, two-phase deletes, renames by mapping or by dual-write and backfill, the 5-second limit:
   https://develop.sentry.dev/backend/application-domains/database-migrations/ and
   https://github.com/getsentry/sentry/blob/c692fefae8eaee263af3491f30747bae2eb2d756/.agents/skills/generate-migration/SKILL.md
 - Sentry, checked migrations, the lockfile and post-deployment migrations:
   https://github.com/getsentry/sentry/blob/c692fefae8eaee263af3491f30747bae2eb2d756/src/sentry/new_migrations/migrations.py,
   https://github.com/getsentry/sentry/blob/c692fefae8eaee263af3491f30747bae2eb2d756/migrations_lockfile.txt
-- Temporal, add-only versioned schema with a minimum compatible version, rollback-tolerant boot check:
+- Temporal, versioned schema changes limited to CREATE and ALTER, a minimum compatible version and a
+  rollback-tolerant boot check:
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/schema/cassandra/README.md,
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/common/persistence/schema/version.go,
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/temporal/fx.go
