@@ -35,9 +35,10 @@ collide. `parallel-executor` splits a single task into units; this skill runs ma
 
 1. Write the ownership table: task, owner, owned paths, verification command, dependencies. Reject a
    plan where two rows own the same path.
-2. Set machine limits before starting: a cap on concurrent builds (`parallel.max_worktrees`, build
-   job flags such as `CARGO_BUILD_JOBS`, or cgroup/`systemd-run` CPU and memory limits). When the cap
-   is reached, new work queues.
+2. Set machine limits before starting. The kit does not enforce a machine-wide cap:
+   `parallel.max_worktrees` limits worktrees per repository and `CARGO_BUILD_JOBS` limits jobs inside
+   one build. Provide the cross-repository cap yourself (a job queue, a runner with fixed slots, or
+   cgroup/`systemd-run` CPU and memory limits) so that new work queues when the cap is reached.
 3. Give each agent: its scope, owned paths, verification command, budget, stop conditions and the
    handoff format below.
 4. Each agent baselines in its worktree, implements, and runs `eng verify --profile fast`, then the

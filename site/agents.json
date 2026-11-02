@@ -6,10 +6,10 @@
   "repository": "https://github.com/WCKDai/agent-engineering",
   "version": "1.2.0",
   "source": {
-    "commit": "4ad452b",
-    "committed_at": "2026-11-02T10:14:06+01:00",
+    "commit": "b40220b",
+    "committed_at": "2026-11-02T10:37:38+01:00",
     "dirty": false,
-    "content_sha256": "c69d587533accdcde851b8e67ad77b37563dde6aec65881ae81326e6dae6a5c0"
+    "content_sha256": "31967ebab5b80f882542557cddc456d7aefe5a693e26fa9c527308520ad32230"
   },
   "start": {
     "read_first": [
@@ -744,7 +744,8 @@
           "title": "Faster linker and test runner",
           "commands": [
             "hyperfine '<build with linker>'",
-            "cargo nextest run --locked"
+            "cargo nextest run --locked",
+            "cargo test --doc --locked"
           ],
           "skills": [
             "build-performance"

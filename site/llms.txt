@@ -4,7 +4,7 @@
 
 Read first: https://creed.sh/creed.md
 
-Source: `4ad452b` · schema `c69d587533accdcd` · kit version `1.2.0`.
+Source: `b40220b` · schema `31967ebab5b80f88` · kit version `1.2.0`.
 
 Homepage: https://creed.sh
 Repository: https://github.com/WCKDai/agent-engineering

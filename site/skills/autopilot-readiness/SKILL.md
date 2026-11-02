@@ -39,7 +39,11 @@ No tier lets an agent release or deploy without a human.
    - Tiered CI: `fast`, `full` and, where the code needs it, `nightly` (`verification-tiers`).
    - A merge queue or auto-merge that requires the gate.
    - A tested rollback path (revert, flag or redeploy of the previous version).
-   - A spend cap (`budget.cost_cap`) and recorded cost per run.
+   - An enforced spending limit at the provider, harness or runner (show where it stops work), plus
+     recorded cost per run. `budget.cost_cap` is only the digest's alert threshold; it stops nothing.
+   - Release and deploy jobs gated by a human approval the agents cannot satisfy (for example a
+     protected deployment environment with required reviewers). A deploy that runs on every merge to
+     the main branch does not meet this item once agents can merge.
    - Alerting: `eng digest` (or equivalent) delivered daily to the named human.
    - Independent verification for the required gate (`independent-verification`).
    - A named human for exceptions.
