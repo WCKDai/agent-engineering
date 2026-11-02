@@ -379,6 +379,8 @@ def main():
         "security": "./.agents/bin/eng security --json",
         "actions": "./.agents/bin/eng audit-actions",
         "evidence": "./.agents/bin/eng evidence verify",
+        "nightly": "./.agents/bin/eng verify --profile nightly",
+        "digest": "./.agents/bin/eng digest <repo>...",
         "worktree": "./.agents/bin/eng worktree create <task> --owner <agent>",
         "release": "./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>",
     }
@@ -393,6 +395,13 @@ def main():
         "Only the pilot and local review branches have been exercised; other repositories are not yet rolled out.",
         "The agent evaluation harness is a smoke test with two tasks, not a statistical model benchmark.",
         "Evidence is hash-chained locally but not signed; CI artifact retention is the external trust anchor.",
+        "Builder and verifier identities in evidence are declared by the caller, not authenticated.",
+        "Quarantine is declarative: the repository's test command must exclude the test; the kit reports it as unverified and blocks on expiry.",
+        "eng digest reads local evidence, quarantine files and worktrees; it does not fetch CI artifacts, forge state or provider spend.",
+        "The delivery metrics are defined in references/metrics.md; the kit records inputs but does not compute them.",
+        "Machine-level concurrency caps are guidance; the kit enforces only parallel.max_worktrees per repository.",
+        "The build-speed, quality-gate, reproducibility, isolation, scale, observability and hardware tools are conditional or candidate; none has been exercised in this repository with recorded evidence or at fleet scale.",
+        "No repository has been promoted with the autopilot-readiness checklist yet; the hardware-in-the-loop path is a candidate.",
         "The kit does not generate SBOMs or signatures; release-check can record and verify supplied material.",
     ]
 
@@ -409,7 +418,7 @@ def main():
         "schema": "agent-engineering-site/v1",
         "title": "CREED",
         "homepage": HOMEPAGE,
-        "repository": "https://github.com/wckdboy/agent-engineering",
+        "repository": "https://github.com/WCKDai/agent-engineering",
         "tagline": "Engineering values, task skills and verifiable tools for agents. Evidence over assertion.",
         "version": VERSION,
         "source": {"commit": commit, "committed_at": commit_date, "dirty": dirty, "content_sha256": content_hash},

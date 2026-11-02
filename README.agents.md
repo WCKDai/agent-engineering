@@ -205,3 +205,7 @@ the previous `.agents/` directory; evidence records remain valid because their s
 - OSV needs network and a supported lockfile.
 - The agent evaluation harness is a separate, opt-in layer; it is not a model benchmark.
 - A green gate is evidence about the checks that ran, not a proof of correctness or security.
+- Builder and verifier identities are declared, not authenticated.
+- Quarantine is declarative; the repository's test command must exclude the test.
+- `eng digest` reads local files only; the delivery metrics are defined, not computed.
+- The 1.2.0 catalog additions are conditional or candidate and have not been exercised at fleet scale.
