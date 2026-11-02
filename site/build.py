@@ -53,6 +53,13 @@ SKILL_META = {
 }
 
 
+# Files this script writes. The recorded source revision ignores them: it is the last commit that
+# changed an input, so committing the outputs does not make the next rebuild differ.
+GENERATED = ["site/data", "site/agents.json", "site/llms.txt", "site/creed.md", "site/skills",
+             "site/references", "site/docs", "site/downloads"]
+SOURCE_PATHSPEC = ["--", ".", *(f":(exclude){path}" for path in GENERATED)]
+
+
 def run_git(*args: str) -> str:
     try:
         res = subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, timeout=20)
@@ -364,9 +371,9 @@ def main():
     if len(skills) != len(SKILL_META) or any(s["id"] not in SKILL_META for s in skills):
         raise SystemExit(f"expected the {len(SKILL_META)} skills in SKILL_META, found {sorted(s['id'] for s in skills)}")
 
-    commit = run_git("rev-parse", "--short", "HEAD") or "uncommitted"
-    commit_date = run_git("log", "-1", "--format=%cI") or datetime.now(timezone.utc).isoformat()
-    dirty = bool(run_git("status", "--porcelain", "--untracked-files=no"))
+    commit = run_git("log", "-1", "--format=%h", *SOURCE_PATHSPEC) or "uncommitted"
+    commit_date = run_git("log", "-1", "--format=%cI", *SOURCE_PATHSPEC) or datetime.now(timezone.utc).isoformat()
+    dirty = bool(run_git("status", "--porcelain", "--untracked-files=no", *SOURCE_PATHSPEC))
     content_payload = {"skills": skills, "tools": tools, "paths": paths, "principles": principles,
                        "phases": phases, "guardrails": guardrails, "repos": repos}
     content_hash = hashlib.sha256(canonical(content_payload).encode("utf-8")).hexdigest()

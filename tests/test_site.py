@@ -8,6 +8,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -92,6 +93,28 @@ class SiteTests(unittest.TestCase):
         html = (SITE / "index.html").read_text(encoding="utf-8")
         self.assertIn('rel="canonical" href="https://creed.sh/"', html)
         self.assertIn('href="./creed.md"', html)
+
+    def test_rebuilding_committed_outputs_changes_nothing(self):
+        """A clean checkout must stay clean after a rebuild, or every gate run reports a tree change."""
+        files = subprocess.run(["git", "-C", str(KIT), "ls-files", "-z"], capture_output=True, text=True, check=True)
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "kit"
+            for name in filter(None, files.stdout.split("\0")):
+                src = KIT / name
+                if src.is_file():
+                    dst = repo / name
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+            git = lambda *a: subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, check=True)
+            git("init", "-q")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "add", "-A")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-qm", "source")
+            build = lambda: subprocess.run([sys.executable, str(repo / "site" / "build.py")], capture_output=True, text=True, check=True)
+            build()
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "add", "-A")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-qm", "outputs", "--allow-empty")
+            build()
+            self.assertEqual(git("status", "--porcelain").stdout, "")
 
     def test_raw_agent_sources_match_authoritative_files(self):
         agents = json.loads((SITE / "agents.json").read_text(encoding="utf-8"))
