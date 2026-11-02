@@ -42,6 +42,7 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `eng init [--force] [--hooks] [--ci]` | Write config, AGENTS section, harness links, hooks, CI. |
 | `eng verify --profile fast` | Run configured fast commands; write evidence. |
 | `eng verify --profile full` | Fast/full commands + required security scans. |
+| `eng verify --profile nightly` | Configured nightly commands (fuzzing, mutation, benchmarks, heavy suites) + security scans. No fallback: an empty nightly profile is blocked. |
 | `eng impact --base <ref>` | Changed files, symbols, references, likely tests, contracts. |
 | `eng security [--json] [--require]` | gitleaks, semgrep, OSV, actionlint, zizmor when installed. |
 | `eng audit-actions` | Require every `uses:` to be a 40-hex commit SHA (or a reviewed exception). |
@@ -84,6 +85,15 @@ verdict. Each record is linked to the previous one by hash.
 ./.agents/bin/eng evidence list
 ./.agents/bin/eng evidence show <id>
 ```
+
+`verify` records the profile, a `scope` (`--scope "<what ran>"`, default the configured commands) and
+the total duration. `--run-id`, `--builder`, `--verifier`, `--cost` and `--cache-stats <json>` add
+optional fields. Anything outside the recorded scope is unverified.
+
+Set `"verification": {"independent": true}` in `engineering.json` to require that a `full` or
+`nightly` gate names a `--verifier` different from the `--builder`; otherwise the gate is `blocked`.
+Identities are declared by the caller, not authenticated: this records separation of duties, it
+does not prove it.
 
 Evidence is local and gitignored; CI uploads it. Never edit a record to change a verdict. A check
 that did not run is `skipped` or `blocked`, never `pass`. See `references/evidence.md`.

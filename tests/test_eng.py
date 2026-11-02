@@ -288,6 +288,45 @@ class VerifyTierTests(EngTestCase):
         self.assertIn("2 record(s)", res.stdout)
 
 
+class IndependentVerificationTests(EngTestCase):
+    def setUp(self):
+        super().setUp()
+        self.init_basic()
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["verification"] = {"independent": True}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+
+    def verdict(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())["verdict"]
+
+    def test_full_gate_without_a_verifier_is_blocked(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertTrue(any("independent verification required" in u for u in self.verdict()["unverified"]))
+
+    def test_builder_cannot_verify_its_own_work(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a", "--verifier", "agent-a")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertTrue(any("cannot verify its own work" in u for u in self.verdict()["unverified"]))
+
+    def test_a_different_verifier_passes(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a", "--verifier", "agent-b")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        self.assertEqual(self.verdict()["status"], "pass")
+
+    def test_a_failure_still_fails_with_a_self_verifier(self):
+        self.install_config({"fast": [{"name": "false", "run": "false"}]})
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["verification"] = {"independent": True}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "a", "--verifier", "a")
+        self.assertEqual(res.returncode, 1, res.stdout)
+
+    def test_fast_profile_is_not_gated(self):
+        res = eng(self.tmp, "verify", "--profile", "fast")
+        self.assertEqual(res.returncode, 0, res.stdout)
+
+
 class ActionPinTests(EngTestCase):
     def workflow(self, ref):
         self.repo.write(".github/workflows/test.yml",

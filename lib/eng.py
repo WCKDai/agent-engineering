@@ -1321,6 +1321,18 @@ def run_metadata(args):
     return {k: v for k, v in meta.items() if v}
 
 
+def independence_problem(cfg, profile, run_meta):
+    """With verification.independent set, a full or nightly gate needs a verifier other than the builder."""
+    if not (cfg.get("verification") or {}).get("independent") or profile not in ("full", "nightly"):
+        return None
+    builder, verifier = run_meta.get("builder"), run_meta.get("verifier")
+    if not builder or not verifier:
+        return "independent verification required: record both --builder and --verifier"
+    if builder == verifier:
+        return f"independent verification required: {builder} cannot verify its own work"
+    return None
+
+
 def read_cache_stats(root, path):
     if not path:
         return None, None
@@ -1400,6 +1412,10 @@ def cmd_verify(args):
     if snapshot.get("present") and final_snapshot.get("diff_sha256") != snapshot.get("diff_sha256"):
         unverified.append("working tree changed during verification; commands may have modified files")
     run_meta = run_metadata(args)
+    independence = independence_problem(cfg, args.profile, run_meta)
+    if independence:
+        blocked = True
+        unverified.append(independence)
     cache, cache_note = read_cache_stats(root, args.cache_stats)
     if cache_note:
         unverified.append(cache_note)
