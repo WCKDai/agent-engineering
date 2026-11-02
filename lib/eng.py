@@ -1215,6 +1215,38 @@ def write_evidence(root, record, logdir):
     return path, body["sha256"]
 
 
+def check_evidence_chain(root):
+    """Return (records, failures); records are the parsed evidence files in index order."""
+    index = Path(root) / EVIDENCE_DIR / "index.jsonl"
+    try:
+        entries = [json.loads(l) for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
+    except json.JSONDecodeError as exc:
+        return [], [f"corrupt index: {exc}"]
+    prev = None
+    records, failures = [], []
+    for entry in entries:
+        path = Path(root) / entry["file"]
+        if not path.exists():
+            failures.append(f"{entry['id']}: missing file")
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            failures.append(f"{entry['id']}: invalid JSON")
+            continue
+        claimed = data.pop("sha256", None)
+        actual = hash_obj(data)
+        if claimed != actual:
+            failures.append(f"{entry['id']}: content hash mismatch")
+        if entry.get("sha256") != claimed:
+            failures.append(f"{entry['id']}: index hash mismatch")
+        if entry.get("prev_sha256") != prev:
+            failures.append(f"{entry['id']}: broken chain link")
+        prev = claimed
+        records.append(data)
+    return records, failures
+
+
 def cmd_evidence(args):
     root = Path(args.root)
     if args.action == "verify":
@@ -1222,32 +1254,11 @@ def cmd_evidence(args):
         if not index.exists():
             print("eng evidence: no evidence index")
             return 1
-        try:
-            entries = [json.loads(l) for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
-        except json.JSONDecodeError as exc:
-            print(f"eng evidence: FAILED — corrupt index: {exc}")
+        records, failures = check_evidence_chain(root)
+        if failures and failures[0].startswith("corrupt index"):
+            print(f"eng evidence: FAILED — {failures[0]}")
             return 1
-        prev = None
-        failures = []
-        for entry in entries:
-            path = root / entry["file"]
-            if not path.exists():
-                failures.append(f"{entry['id']}: missing file")
-                continue
-            try:
-                data = json.loads(path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                failures.append(f"{entry['id']}: invalid JSON")
-                continue
-            claimed = data.pop("sha256", None)
-            actual = hash_obj(data)
-            if claimed != actual:
-                failures.append(f"{entry['id']}: content hash mismatch")
-            if entry.get("sha256") != claimed:
-                failures.append(f"{entry['id']}: index hash mismatch")
-            if entry.get("prev_sha256") != prev:
-                failures.append(f"{entry['id']}: broken chain link")
-            prev = claimed
+        entries = [l for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
         if failures:
             print("eng evidence: FAILED")
             for f in failures:
