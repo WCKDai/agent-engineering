@@ -24,7 +24,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 CONFIG_SCHEMA = "eng-config/v1"
 DETECT_SCHEMA = "eng-detect/v1"
 IMPACT_SCHEMA = "eng-impact/v1"

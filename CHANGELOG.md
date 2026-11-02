@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.2.0 — 2026-11-02
+
+Running many agents on many repositories, fast, at the same evidence standard.
+
+- `eng verify --profile nightly`: configured nightly commands plus security scanners; an empty
+  nightly profile is blocked, never a fallback.
+- Evidence records state `scope` and `duration_s`; optional `run` (id, builder, verifier), `cost`
+  and `cache` fields are recorded when supplied. Additive within `eng-evidence/v1`; 1.1.x records
+  still verify in the same chain.
+- `"verification": {"independent": true}` blocks a full or nightly gate unless a verifier other
+  than the builder is recorded.
+- `.agents/quarantine.json` (`eng-quarantine/v1`): quarantined tests are reported unverified; an
+  expired or incomplete entry blocks.
+- `eng digest`: an exception-only "needs you" list across local repositories (`eng-digest/v1`).
+- Skills: parallel-agent-work, verification-tiers, build-performance, independent-verification,
+  agent-sandboxing, autopilot-readiness and improvement-loop; failure-investigator covers flake
+  quarantine and golden/property tests.
+- Build paths: parallel agents, fast Rust CI, autopilot promotion, hardware-in-the-loop (candidate).
+- Toolbox: a failure mode for every tool; new conditional and candidate entries with the version
+  and date checked. Nothing new is adopted.
+- Principles: speed never lowers the evidence level; report by exception; keep the number.
+- `references/metrics.md` defines the delivery metrics for the weekly improvement loop.
+
 ## 1.1.1 — 2026-10-30
 
 - `security.osv_lockfile` lets a repository with historical nested vendor lockfiles scan only
