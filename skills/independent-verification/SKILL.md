@@ -33,8 +33,10 @@ checks and tries to break the change. Self-review is useful, but it does not sat
 1. Start from a clean checkout of the change's head; do not reuse the builder's worktree or output.
 2. Read the diff and the acceptance criteria. Write down what would make the change wrong.
 3. Try to break it: edge inputs, error paths, concurrency, compatibility, security boundaries, the
-   behavior the change claims to preserve. Add a test for anything you find.
-4. Run the gate yourself:
+   behavior the change claims to preserve. Reproduce anything you find in a separate checkout or
+   branch and hand the failing test to the builder; never run the certifying gate on a tree you
+   edited.
+4. Run the gate yourself, from a clean checkout of the final revision:
    `./.agents/bin/eng verify --profile full --builder <builder> --verifier <you> --run-id <id>`.
 5. Report findings with file and line, the evidence id, and a verdict: accept, accept with notes, or
    reject.
