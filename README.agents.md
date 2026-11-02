@@ -52,6 +52,7 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `eng guard staged` | Pre-commit guard: secrets, conflict markers, sensitive/large files. |
 | `eng worktree create/list/remove` | Isolated `.worktrees/<name>` with an owner record. |
 | `eng evidence verify/list/show` | Recompute hashes and check the evidence chain. |
+| `eng digest [repos...] [--json]` | Exception-only "needs you" list across repositories. |
 | `eng doctor [--json]` | Tool and repository readiness. |
 
 `--json` works before or after the subcommand. `--root <path>` selects another repository.
@@ -108,6 +109,21 @@ quarantine; the repository's test command must exclude the test itself. While ac
 
 Evidence is local and gitignored; CI uploads it. Never edit a record to change a verdict. A check
 that did not run is `skipped` or `blocked`, never `pass`. See `references/evidence.md`.
+
+## Digest
+
+```sh
+./.agents/bin/eng digest ~/src/repo-a ~/src/repo-b --cost-cap 50
+```
+
+`eng digest` reads each repository's evidence, quarantine file and worktrees and lists only what
+needs a human: the latest `fail` or `blocked` verdict per profile, every `unverified` note in those
+records, a broken or tampered chain, a repository with no evidence, expired or soon-expiring
+quarantines, spend over the cap (`--cost-cap`, or `budget.cost_cap` and `budget.window_days` in
+`engineering.json`) and runs with no recorded cost, and worktrees with no commit or evidence for
+`--stale-hours` (default 24). It exits `0` when nothing needs you and `1` otherwise; `--json` emits
+`eng-digest/v1`. It never drops a blocked, skipped or unverified item to shorten the list. It reads
+local files only; collecting CI evidence artifacts into those directories is the caller's job.
 
 ## Worktrees and parallelism
 

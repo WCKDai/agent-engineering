@@ -369,6 +369,97 @@ class QuarantineTests(EngTestCase):
         self.assertEqual(len(problems), 1)
 
 
+class DigestTests(EngTestCase):
+    def digest(self, *args, root=None):
+        res = eng(root or self.tmp, "digest", "--json", *args)
+        return res.returncode, json.loads(res.stdout)["items"]
+
+    def kinds(self, items):
+        return sorted({i["kind"] for i in items})
+
+    def test_clean_passing_repository_needs_nothing(self):
+        self.init_basic()
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        code, items = self.digest()
+        self.assertEqual((code, items), (0, []))
+        res = eng(self.tmp, "digest")
+        self.assertIn("nothing needs you", res.stdout)
+
+    def test_no_evidence_is_an_exception(self):
+        self.init_basic()
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertEqual(self.kinds(items), ["no-evidence"])
+
+    def test_failure_blocked_and_unverified_are_all_listed(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "false", "run": "false"}], "nightly": []})
+        eng(self.tmp, "verify")
+        eng(self.tmp, "verify", "--profile", "nightly")
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertIn("fail", self.kinds(items))
+        self.assertIn("blocked", self.kinds(items))
+        self.assertIn("unverified", self.kinds(items))
+        self.assertTrue(any("command:false" in i["detail"] for i in items if i["kind"] == "fail"))
+
+    def test_a_newer_pass_on_another_profile_does_not_hide_a_failure(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "true", "run": "true"}], "nightly": [{"name": "false", "run": "false"}]})
+        eng(self.tmp, "verify", "--profile", "nightly")
+        eng(self.tmp, "verify", "--profile", "fast")
+        code, items = self.digest()
+        self.assertTrue(any(i["kind"] == "fail" and i["detail"].startswith("nightly") for i in items))
+
+    def test_tampered_evidence_is_reported(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        path = next((self.tmp / ".agents" / "evidence").glob("*.json"))
+        data = json.loads(path.read_text())
+        data["commands"] = []
+        path.write_text(json.dumps(data))
+        code, items = self.digest()
+        self.assertIn("evidence-tampered", self.kinds(items))
+
+    def test_expiring_quarantine_and_spend_over_cap(self):
+        from datetime import date, timedelta
+        self.init_basic()
+        soon = (date.today() + timedelta(days=2)).isoformat()
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": [
+            {"test": "t", "owner": "agent-a", "expires": soon, "reason": "flaky"}]}))
+        eng(self.tmp, "verify", "--cost", "6")
+        eng(self.tmp, "verify", "--cost", "5")
+        eng(self.tmp, "verify")
+        code, items = self.digest("--cost-cap", "10")
+        kinds = self.kinds(items)
+        self.assertIn("quarantine-expiring", kinds)
+        self.assertIn("over-spend", kinds)
+        self.assertIn("spend-unknown", kinds)
+        code, items = self.digest("--cost-cap", "100")
+        self.assertNotIn("over-spend", self.kinds(items))
+
+    def test_stalled_worktree_is_reported(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        self.assertEqual(eng(self.tmp, "worktree", "create", "unit-a", "--owner", "agent-a",
+                             "--allow-dirty").returncode, 0)
+        code, items = self.digest("--stale-hours", "1000")
+        self.assertNotIn("stalled", self.kinds(items))
+        code, items = self.digest("--stale-hours", "0")
+        stalled = [i for i in items if i["kind"] == "stalled"]
+        self.assertEqual(len(stalled), 1)
+        self.assertIn("agent-a", stalled[0]["detail"])
+
+    def test_several_repositories_in_one_digest(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        other = self.tmp / "missing-repo"
+        res = eng(self.tmp, "digest", "--json", str(self.tmp), str(other))
+        items = json.loads(res.stdout)["items"]
+        self.assertEqual(res.returncode, 1)
+        self.assertEqual([i["kind"] for i in items], ["unreadable"])
+
+
 class ActionPinTests(EngTestCase):
     def workflow(self, ref):
         self.repo.write(".github/workflows/test.yml",

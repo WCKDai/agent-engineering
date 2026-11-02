@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 VERSION = "1.1.1"
@@ -1289,6 +1289,123 @@ def cmd_evidence(args):
     return 2
 
 
+# ----------------------------------------------------------------------------- digest
+
+
+DIGEST_SCHEMA = "eng-digest/v1"
+
+
+def parse_time(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def digest_repo(root, now, cost_cap=None, window_days=None, stale_hours=24, expiring_days=7):
+    """Exceptions only: anything a human must look at. Nothing blocked, skipped or unverified is dropped."""
+    root = Path(root)
+    name = root.name
+    items = []
+
+    def add(kind, detail):
+        items.append({"repo": name, "path": str(root), "kind": kind, "detail": detail})
+
+    if not root.is_dir():
+        add("unreadable", "not a directory")
+        return items
+    cfg = {}
+    try:
+        cfg = load_config(root)[0] or {}
+    except SystemExit as exc:
+        add("blocked", str(exc))
+    if not (root / EVIDENCE_DIR / "index.jsonl").exists():
+        add("no-evidence", "no evidence index: nothing here has been verified")
+        records = []
+    else:
+        records, failures = check_evidence_chain(root)
+        for failure in failures:
+            add("evidence-tampered", failure)
+    latest = {}
+    for record in records:
+        latest[record.get("profile", "?")] = record
+    for profile, record in sorted(latest.items()):
+        verdict = record.get("verdict", {})
+        status = verdict.get("status")
+        where = f"{profile} {record.get('id')}"
+        if status in ("fail", "blocked"):
+            reasons = verdict.get("required_failures") or []
+            add(status, f"{where}: " + (", ".join(reasons) if reasons else "see record"))
+        for note in verdict.get("unverified", []):
+            add("unverified", f"{where}: {note}")
+    active, problems = load_quarantine(root, now.date())
+    for problem in problems:
+        add("quarantine", problem)
+    for entry in active:
+        expires = datetime.strptime(entry["expires"], "%Y-%m-%d").date()
+        if (expires - now.date()).days <= expiring_days:
+            add("quarantine-expiring", f"{entry['test']} (owner {entry['owner']}) expires {entry['expires']}")
+    budget = cfg.get("budget") or {}
+    cap = cost_cap if cost_cap is not None else budget.get("cost_cap")
+    window = window_days or budget.get("window_days") or 7
+    if cap is not None:
+        recent = [r for r in records if (parse_time(r.get("finished_at")) or now) >= now - timedelta(days=window)]
+        spent = sum(float(r["cost"]["amount"]) for r in recent if isinstance(r.get("cost"), dict))
+        unknown = sum(1 for r in recent if not isinstance(r.get("cost"), dict))
+        if spent > float(cap):
+            add("over-spend", f"{spent:g} recorded in {window} days, cap {cap:g}")
+        if unknown:
+            add("spend-unknown", f"{unknown} run(s) in {window} days recorded no cost")
+    base = root / WORKTREE_DIR
+    if base.is_dir():
+        for wt in sorted(p for p in base.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            stamps = []
+            res = git(wt, "log", "-1", "--format=%cI")
+            if res.ok and res.out.strip():
+                stamps.append(parse_time(res.out.strip()))
+            index = wt / EVIDENCE_DIR / "index.jsonl"
+            if index.exists():
+                lines = [l for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
+                if lines:
+                    try:
+                        stamps.append(parse_time(json.loads(lines[-1]).get("at")))
+                    except json.JSONDecodeError:
+                        pass
+            meta = worktree_meta_path(root, wt.name)
+            owner = "?"
+            if meta.exists():
+                try:
+                    data = json.loads(meta.read_text(encoding="utf-8"))
+                    owner = data.get("owner", "?")
+                    stamps.append(parse_time(data.get("created_at")))
+                except json.JSONDecodeError:
+                    pass
+            stamps = [t for t in stamps if t]
+            last = max(stamps) if stamps else None
+            if last is None or now - last > timedelta(hours=stale_hours):
+                when = last.isoformat() if last else "never"
+                add("stalled", f"worktree {wt.name} (owner {owner}): no commit or evidence since {when}")
+    return items
+
+
+def cmd_digest(args):
+    now = datetime.now(timezone.utc)
+    roots = args.repos or [args.root]
+    items = []
+    for root in roots:
+        items.extend(digest_repo(root, now, args.cost_cap, args.window_days, args.stale_hours, args.expiring_days))
+    if args.json:
+        print(json.dumps({"schema": DIGEST_SCHEMA, "generated_at": now_iso(), "repositories": [str(r) for r in roots],
+                          "items": items}, indent=2, sort_keys=True))
+    elif not items:
+        print(f"eng digest: nothing needs you ({len(roots)} repositories)")
+    else:
+        print(f"eng digest: {len(items)} item(s) need you")
+        for item in items:
+            print(f"  {item['repo']:<24} {item['kind']:<20} {item['detail']}")
+    return 1 if items else 0
+
+
 # ----------------------------------------------------------------------------- verify
 
 
@@ -2147,6 +2264,14 @@ def main(argv=None):
     p.add_argument("--allow-dirty", action="store_true")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_worktree)
+
+    p = sub.add_parser("digest", help="exception-only report across repositories")
+    p.add_argument("repos", nargs="*", help="repository roots (default: --root)")
+    p.add_argument("--cost-cap", type=float, default=None, help="spend cap per window (overrides budget.cost_cap)")
+    p.add_argument("--window-days", type=int, default=None, help="spend window (default budget.window_days or 7)")
+    p.add_argument("--stale-hours", type=float, default=24)
+    p.add_argument("--expiring-days", type=int, default=7)
+    p.set_defaults(func=cmd_digest)
 
     p = sub.add_parser("doctor", help="show tool and repository readiness")
     p.set_defaults(func=cmd_doctor)
