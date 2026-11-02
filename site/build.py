@@ -454,7 +454,8 @@ def main():
                     "steps": [{"title": st["title"], "commands": st["commands"], "skills": st["skills"]} for st in p["steps"]]}
                    for p in paths],
         "tools": [{"id": t["id"], "name": t["name"], "category": t["category"], "status": t["status"],
-                    "summary": t["summary"], "command": t["command"]} for t in tools],
+                    "summary": t["summary"], "failure_mode": t["failure_mode"], "command": t["command"],
+                    **({"version": t["version"], "checked": t["checked"]} if "version" in t else {})} for t in tools],
         "repos": repos,
         "guardrails": guardrails,
         "limits": limits,

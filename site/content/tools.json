@@ -10,7 +10,8 @@
     "install": "brew install ripgrep",
     "license": "MIT / Unlicense",
     "docs": "https://github.com/BurntSushi/ripgrep",
-    "tags": ["search", "context"]
+    "tags": ["search", "context"],
+    "failure_mode": "Finds text, not meaning: misses dynamic references, macros and generated code."
   },
   {
     "id": "git-grep",
@@ -23,7 +24,8 @@
     "install": "git",
     "license": "GPL-2.0",
     "docs": "https://git-scm.com/docs/git-grep",
-    "tags": ["search", "fallback"]
+    "tags": ["search", "fallback"],
+    "failure_mode": "Same textual limits as ripgrep; untracked files are invisible to it."
   },
   {
     "id": "lsp",
@@ -36,7 +38,8 @@
     "install": "per language toolchain",
     "license": "varies",
     "docs": "https://microsoft.github.io/language-server-protocol/",
-    "tags": ["lsp", "symbols", "diagnostics"]
+    "tags": ["lsp", "symbols", "diagnostics"],
+    "failure_mode": "Only as good as the project's build configuration; a stale index or failing build gives wrong answers."
   },
   {
     "id": "cargo-metadata",
@@ -49,7 +52,8 @@
     "install": "rust toolchain",
     "license": "MIT / Apache-2.0",
     "docs": "https://doc.rust-lang.org/cargo/commands/cargo-metadata.html",
-    "tags": ["rust", "build-graph"]
+    "tags": ["rust", "build-graph"],
+    "failure_mode": "Describes the declared graph, not feature-gated or build-script-generated code paths."
   },
   {
     "id": "ast-grep",
@@ -62,7 +66,8 @@
     "install": "brew install ast-grep",
     "license": "MIT",
     "docs": "https://ast-grep.github.io/",
-    "tags": ["ast", "candidate"]
+    "tags": ["ast", "candidate"],
+    "failure_mode": "Rules match syntax, not types; a pattern can silently miss variants."
   },
   {
     "id": "tree-sitter",
@@ -75,7 +80,8 @@
     "install": "per language binding",
     "license": "MIT",
     "docs": "https://tree-sitter.github.io/tree-sitter/",
-    "tags": ["ast", "candidate"]
+    "tags": ["ast", "candidate"],
+    "failure_mode": "Grammars lag language releases; parse errors degrade to partial trees."
   },
   {
     "id": "scip",
@@ -88,7 +94,8 @@
     "install": "per language indexer",
     "license": "Apache-2.0",
     "docs": "https://sourcegraph.com/docs/code-search/scip",
-    "tags": ["index", "candidate"]
+    "tags": ["index", "candidate"],
+    "failure_mode": "Indexes go stale between builds; a stale index reports outdated references."
   },
   {
     "id": "cargo-test",
@@ -101,7 +108,8 @@
     "install": "rust toolchain",
     "license": "MIT / Apache-2.0",
     "docs": "https://doc.rust-lang.org/cargo/commands/cargo-test.html",
-    "tags": ["rust", "tests"]
+    "tags": ["rust", "tests"],
+    "failure_mode": "Proves only what the tests assert; feature flags and targets not built are not tested."
   },
   {
     "id": "pytest",
@@ -114,7 +122,8 @@
     "install": "pip install pytest",
     "license": "MIT",
     "docs": "https://docs.pytest.org/",
-    "tags": ["python", "tests"]
+    "tags": ["python", "tests"],
+    "failure_mode": "Fixtures and monkeypatching can hide real integration failures."
   },
   {
     "id": "node-test",
@@ -127,7 +136,8 @@
     "install": "per repository",
     "license": "MIT",
     "docs": "https://nodejs.org/api/test.html",
-    "tags": ["javascript", "typescript", "tests"]
+    "tags": ["javascript", "typescript", "tests"],
+    "failure_mode": "Mocks and test environments (jsdom) differ from real runtimes."
   },
   {
     "id": "swift-test",
@@ -140,7 +150,8 @@
     "install": "Xcode / Swift toolchain",
     "license": "Apache-2.0",
     "docs": "https://www.swift.org/documentation/package-manager/",
-    "tags": ["swift", "tests"]
+    "tags": ["swift", "tests"],
+    "failure_mode": "Simulator and host differ from devices; UI behaviour needs separate tests."
   },
   {
     "id": "gradle-test",
@@ -153,11 +164,12 @@
     "install": "JDK / Android SDK",
     "license": "Apache-2.0",
     "docs": "https://docs.gradle.org/current/userguide/java_testing.html",
-    "tags": ["kotlin", "java", "android", "tests"]
+    "tags": ["kotlin", "java", "android", "tests"],
+    "failure_mode": "Robolectric and emulators differ from devices; instrumentation tests can be flaky."
   },
   {
     "id": "proptest",
-    "name": "Property-based testing",
+    "name": "Property-based testing (proptest)",
     "category": "verification",
     "status": "conditional",
     "summary": "Generate inputs from invariants instead of enumerating examples.",
@@ -166,11 +178,14 @@
     "install": "crate or library",
     "license": "MIT / Apache-2.0",
     "docs": "https://proptest-rs.github.io/proptest/",
-    "tags": ["property", "rust"]
+    "tags": ["property", "rust"],
+    "failure_mode": "Generators can miss the interesting region; an unpinned seed makes failures hard to reproduce.",
+    "version": "1.12.0",
+    "checked": "2026-11-02"
   },
   {
     "id": "fuzzing",
-    "name": "Fuzzing",
+    "name": "Fuzzing (cargo-fuzz)",
     "category": "verification",
     "status": "conditional",
     "summary": "Coverage-guided input exploration for parsers and binary formats.",
@@ -179,24 +194,30 @@
     "install": "cargo install cargo-fuzz",
     "license": "MIT / Apache-2.0",
     "docs": "https://rust-fuzz.github.io/book/",
-    "tags": ["fuzz", "parsers"]
+    "tags": ["fuzz", "parsers"],
+    "failure_mode": "Finds only what the harness reaches; no crashes in a short run is weak evidence.",
+    "version": "cargo-fuzz 0.13.2",
+    "checked": "2026-11-02"
   },
   {
     "id": "mutation",
-    "name": "Mutation testing",
+    "name": "Mutation testing (cargo-mutants)",
     "category": "verification",
     "status": "candidate",
     "summary": "Test the tests by mutating production code.",
     "why": "Useful evidence that a test suite detects faults; expensive and language-specific, so run it on critical modules rather than every commit.",
-    "command": "cargo mutants / stryker / mutmut",
+    "command": "cargo mutants --in-diff <diff> / stryker / mutmut",
     "install": "per language",
     "license": "MIT / Apache-2.0",
-    "docs": "https://mutmut.readthedocs.io/",
-    "tags": ["mutation", "coverage"]
+    "docs": "https://mutants.rs/",
+    "tags": ["mutation", "coverage"],
+    "failure_mode": "Slow, and surviving equivalent mutants create noise; easy to misread as a coverage score.",
+    "version": "cargo-mutants 27.1.0",
+    "checked": "2026-11-02"
   },
   {
     "id": "golden",
-    "name": "Golden and snapshot tests",
+    "name": "Golden and snapshot tests (insta)",
     "category": "verification",
     "status": "conditional",
     "summary": "Freeze serialized output, CLI text, rendering and formats.",
@@ -205,7 +226,10 @@
     "install": "per language",
     "license": "Apache-2.0 / MIT",
     "docs": "https://insta.rs/",
-    "tags": ["golden", "contracts"]
+    "tags": ["golden", "contracts"],
+    "failure_mode": "Regenerating goldens to make a red test green turns them into rubber stamps.",
+    "version": "insta 1.49.0",
+    "checked": "2026-11-02"
   },
   {
     "id": "contract-tests",
@@ -218,7 +242,8 @@
     "install": "per repository",
     "license": "n/a",
     "docs": "https://martinfowler.com/bliki/ContractTest.html",
-    "tags": ["contracts", "compatibility"]
+    "tags": ["contracts", "compatibility"],
+    "failure_mode": "Fixtures cover the cases someone thought of; real consumers may rely on others."
   },
   {
     "id": "gitleaks",
@@ -231,7 +256,8 @@
     "install": "brew install gitleaks",
     "license": "MIT",
     "docs": "https://github.com/gitleaks/gitleaks",
-    "tags": ["secrets", "supply-chain"]
+    "tags": ["secrets", "supply-chain"],
+    "failure_mode": "Pattern-based: misses novel secret formats and flags fake ones; untracked files are not scanned."
   },
   {
     "id": "semgrep",
@@ -244,7 +270,8 @@
     "install": "brew install semgrep",
     "license": "LGPL-2.1",
     "docs": "https://semgrep.dev/docs/",
-    "tags": ["sast", "rules"]
+    "tags": ["sast", "rules"],
+    "failure_mode": "Only the rules configured; a clean run means those rules found nothing."
   },
   {
     "id": "osv",
@@ -257,7 +284,8 @@
     "install": "brew install osv-scanner",
     "license": "Apache-2.0",
     "docs": "https://google.github.io/osv-scanner/",
-    "tags": ["dependencies", "advisories"]
+    "tags": ["dependencies", "advisories"],
+    "failure_mode": "Needs network and a supported lockfile; advisories lag disclosure."
   },
   {
     "id": "actionlint",
@@ -270,7 +298,8 @@
     "install": "brew install actionlint",
     "license": "MIT",
     "docs": "https://github.com/rhysd/actionlint",
-    "tags": ["ci", "workflows"]
+    "tags": ["ci", "workflows"],
+    "failure_mode": "Checks syntax and shell, not whether a workflow is safe to run on untrusted input."
   },
   {
     "id": "zizmor",
@@ -283,7 +312,8 @@
     "install": "brew install zizmor",
     "license": "MIT",
     "docs": "https://docs.zizmor.sh/",
-    "tags": ["ci", "workflows", "injection"]
+    "tags": ["ci", "workflows", "injection"],
+    "failure_mode": "Static audit of workflow files; cannot see repository settings or secrets scoping."
   },
   {
     "id": "codeql",
@@ -296,7 +326,8 @@
     "install": "GitHub CodeQL",
     "license": "GitHub terms",
     "docs": "https://codeql.github.com/",
-    "tags": ["sast", "deep", "candidate"]
+    "tags": ["sast", "deep", "candidate"],
+    "failure_mode": "Slow and heavy; query coverage varies by language, and alerts need triage."
   },
   {
     "id": "trivy",
@@ -309,7 +340,8 @@
     "install": "brew install trivy",
     "license": "Apache-2.0",
     "docs": "https://trivy.dev/",
-    "tags": ["images", "sbom", "candidate"]
+    "tags": ["images", "sbom", "candidate"],
+    "failure_mode": "Database freshness and noise; image scans miss what is fetched at runtime."
   },
   {
     "id": "cosign",
@@ -322,7 +354,8 @@
     "install": "brew install cosign",
     "license": "Apache-2.0",
     "docs": "https://docs.sigstore.dev/cosign/",
-    "tags": ["signing", "provenance"]
+    "tags": ["signing", "provenance"],
+    "failure_mode": "A signature proves who signed, not that the artifact is safe; key or identity mistakes break trust."
   },
   {
     "id": "worktrees",
@@ -335,7 +368,8 @@
     "install": "git",
     "license": "GPL-2.0",
     "docs": "https://git-scm.com/docs/git-worktree",
-    "tags": ["isolation", "parallel"]
+    "tags": ["isolation", "parallel"],
+    "failure_mode": "Isolate files, not shared caches, ports, databases or devices."
   },
   {
     "id": "eng",
@@ -348,7 +382,8 @@
     "install": "./install.sh --target <repo>",
     "license": "project license",
     "docs": "./README.agents.md",
-    "tags": ["control-plane", "evidence"]
+    "tags": ["control-plane", "evidence"],
+    "failure_mode": "Runs what the config says; a weak config gives a green gate that proves little."
   },
   {
     "id": "github-actions",
@@ -361,7 +396,8 @@
     "install": "repository workflow",
     "license": "GitHub terms",
     "docs": "https://docs.github.com/actions",
-    "tags": ["ci", "gates"]
+    "tags": ["ci", "gates"],
+    "failure_mode": "A pull request runs its own copy of the workflow, so CI cannot vouch for changes to CI."
   },
   {
     "id": "containers",
@@ -374,20 +410,24 @@
     "install": "Docker / Podman",
     "license": "Apache-2.0",
     "docs": "https://docs.docker.com/",
-    "tags": ["reproducibility", "isolation"]
+    "tags": ["reproducibility", "isolation"],
+    "failure_mode": "Image drift and unpinned bases break reproducibility; containers are not a strong security boundary on their own."
   },
   {
     "id": "sccache",
-    "name": "sccache / R2",
+    "name": "sccache (S3-compatible)",
     "category": "execution",
     "status": "conditional",
-    "summary": "Content-addressed build caching across runners.",
-    "why": "High value for large Rust workspaces. Requires a private bucket and credentials; never put them in the repository.",
-    "command": "SCCACHE_BUCKET=... sccache",
-    "install": "mozilla-actions/sccache-action",
+    "summary": "Shared compiler cache for Rust (and C/C++) across runners, on S3-compatible storage.",
+    "why": "High value for large Rust workspaces. Only main-branch CI gets write credentials; PR builds and agents read. Separate prefixes per project and toolchain; never put credentials in the repository.",
+    "command": "sccache --show-stats --stats-format json",
+    "install": "cargo install sccache (or a pinned CI action)",
     "license": "Apache-2.0",
     "docs": "https://github.com/mozilla/sccache",
-    "tags": ["cache", "rust"]
+    "tags": ["cache", "rust"],
+    "failure_mode": "A poisoned or mismatched cache returns wrong artifacts; key mismatches (paths, flags, toolchain) give near-zero hit rates.",
+    "version": "0.19.0",
+    "checked": "2026-11-02"
   },
   {
     "id": "evidence",
@@ -400,7 +440,8 @@
     "install": "included in eng",
     "license": "project license",
     "docs": "./references/evidence.md",
-    "tags": ["audit", "metrics"]
+    "tags": ["audit", "metrics"],
+    "failure_mode": "Local and unsigned: proves integrity of the chain, not who produced it."
   },
   {
     "id": "artifacts",
@@ -413,7 +454,8 @@
     "install": "repository workflow",
     "license": "GitHub terms",
     "docs": "https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts",
-    "tags": ["retention", "audit"]
+    "tags": ["retention", "audit"],
+    "failure_mode": "Retention expires; artifacts are only as trustworthy as the job that uploaded them."
   },
   {
     "id": "otel",
@@ -426,7 +468,10 @@
     "install": "per runtime",
     "license": "Apache-2.0",
     "docs": "https://opentelemetry.io/",
-    "tags": ["metrics", "traces", "candidate"]
+    "tags": ["metrics", "traces", "candidate"],
+    "failure_mode": "Instrumentation without a consumer is cost without value; traces can leak sensitive data.",
+    "version": "Collector 0.164.0",
+    "checked": "2026-11-02"
   },
   {
     "id": "agent-eval",
@@ -439,7 +484,8 @@
     "install": "included in kit",
     "license": "project license",
     "docs": "./evals/agent/README.md",
-    "tags": ["evaluation", "agents"]
+    "tags": ["evaluation", "agents"],
+    "failure_mode": "Two smoke tasks: detects gross regressions, not model quality."
   },
   {
     "id": "agents-md",
@@ -452,20 +498,22 @@
     "install": "installer appends one marked section",
     "license": "project license",
     "docs": "./templates/AGENTS.md",
-    "tags": ["policy", "discovery"]
+    "tags": ["policy", "discovery"],
+    "failure_mode": "Stale policy misleads agents; it is guidance, not enforcement."
   },
   {
     "id": "skills",
     "name": "Agent Skills",
     "category": "context",
     "status": "adopted",
-    "summary": "Ten task-specific entrypoints with workflows and completion criteria.",
+    "summary": "Seventeen task-specific entrypoints with workflows and completion criteria.",
     "why": "Load one skill for the task instead of injecting every instruction into every context.",
     "command": "read .agents/skills/<name>/SKILL.md",
     "install": "included in kit",
     "license": "project license",
     "docs": "./skills/",
-    "tags": ["skills", "context"]
+    "tags": ["skills", "context"],
+    "failure_mode": "Text, not enforcement: an agent can ignore a skill; the gate still has to catch it."
   },
   {
     "id": "adr",
@@ -478,7 +526,8 @@
     "install": "repository convention",
     "license": "project license",
     "docs": "https://adr.github.io/",
-    "tags": ["decisions", "docs"]
+    "tags": ["decisions", "docs"],
+    "failure_mode": "Decisions rot if not linked to code and revisited."
   },
   {
     "id": "opencode",
@@ -491,7 +540,8 @@
     "install": "existing harness",
     "license": "MIT",
     "docs": "https://opencode.ai/docs/",
-    "tags": ["harness", "executor"]
+    "tags": ["harness", "executor"],
+    "failure_mode": "Executor behaviour changes between versions; its permissions must be configured, not assumed."
   },
   {
     "id": "codex",
@@ -504,7 +554,8 @@
     "install": "existing harness",
     "license": "Apache-2.0",
     "docs": "https://developers.openai.com/codex/",
-    "tags": ["harness", "executor"]
+    "tags": ["harness", "executor"],
+    "failure_mode": "Executor behaviour changes between versions; sandbox and approval settings vary by environment."
   },
   {
     "id": "claude-code",
@@ -517,7 +568,8 @@
     "install": "existing harness",
     "license": "Anthropic terms",
     "docs": "https://docs.anthropic.com/en/docs/claude-code",
-    "tags": ["harness", "executor"]
+    "tags": ["harness", "executor"],
+    "failure_mode": "Executor behaviour changes between versions; permission modes must be set deliberately."
   },
   {
     "id": "autobot",
@@ -530,7 +582,8 @@
     "install": "existing project",
     "license": "project license",
     "docs": "https://autobot.sh/",
-    "tags": ["harness", "control-plane"]
+    "tags": ["harness", "control-plane"],
+    "failure_mode": "Local agent in development; receipts are only as complete as the instrumentation."
   },
   {
     "id": "invincible",
@@ -543,7 +596,8 @@
     "install": "platform stack",
     "license": "project license",
     "docs": "https://invincible.sh/",
-    "tags": ["models", "policy", "audit"]
+    "tags": ["models", "policy", "audit"],
+    "failure_mode": "Gateway in development; a misconfigured policy can pass or block more than intended."
   },
   {
     "id": "litellm",
@@ -556,7 +610,8 @@
     "install": "services/litellm",
     "license": "MIT",
     "docs": "https://docs.litellm.ai/",
-    "tags": ["models", "routing"]
+    "tags": ["models", "routing"],
+    "failure_mode": "Another service to run and secure; routing errors can send data to the wrong provider."
   },
   {
     "id": "github",
@@ -569,7 +624,8 @@
     "install": "gh",
     "license": "GitHub terms",
     "docs": "https://cli.github.com/",
-    "tags": ["git", "ci", "review"]
+    "tags": ["git", "ci", "review"],
+    "failure_mode": "Platform outages and rate limits; API tokens are high-value credentials."
   },
   {
     "id": "plane",
@@ -582,7 +638,8 @@
     "install": "MCP server",
     "license": "AGPL-3.0",
     "docs": "https://plane.so/",
-    "tags": ["planning", "tracking"]
+    "tags": ["planning", "tracking"],
+    "failure_mode": "Tracking drifts from reality unless items are updated when work lands."
   },
   {
     "id": "pencil",
@@ -595,6 +652,391 @@
     "install": "MCP server",
     "license": "pen.dev terms",
     "docs": "https://pen.dev/",
-    "tags": ["design", "ui"]
+    "tags": ["design", "ui"],
+    "failure_mode": "Design files drift from shipped UI without a review step."
+  },
+  {
+    "id": "cargo-nextest",
+    "name": "cargo-nextest",
+    "category": "build",
+    "status": "conditional",
+    "summary": "Faster Rust test runner: per-test processes, retries reported, JUnit output.",
+    "why": "Usually faster than cargo test on large workspaces. Does not run doctests; keep `cargo test --doc` in the gate.",
+    "command": "cargo nextest run --locked",
+    "install": "cargo install cargo-nextest --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://nexte.st/",
+    "tags": ["rust", "tests", "speed"],
+    "failure_mode": "Skips doctests unless run separately; retries can hide flakes if they are treated as passes.",
+    "version": "0.9.150",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "fast-linker",
+    "name": "mold or lld",
+    "category": "build",
+    "status": "conditional",
+    "summary": "A faster linker for large Rust binaries.",
+    "why": "Linking often dominates incremental Rust builds. Measure with and without; mold is Linux-focused, lld is cross-platform.",
+    "command": "RUSTFLAGS='-C link-arg=-fuse-ld=mold' cargo build",
+    "install": "package manager",
+    "license": "MIT (mold) / Apache-2.0 with LLVM exception (lld)",
+    "docs": "https://github.com/rui314/mold",
+    "tags": ["rust", "linker", "speed"],
+    "failure_mode": "Platform-specific flags; a linker difference can surface as an obscure link error or a different binary layout.",
+    "version": "mold 3.0.0 / LLVM lld 23.1.4",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-hakari",
+    "name": "cargo-hakari",
+    "category": "build",
+    "status": "candidate",
+    "summary": "Workspace-hack crate so feature unification stops causing rebuilds.",
+    "why": "Helps large workspaces whose crates rebuild because features differ between builds. Adds a generated crate to maintain.",
+    "command": "cargo hakari generate && cargo hakari verify",
+    "install": "cargo install cargo-hakari --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://docs.rs/cargo-hakari",
+    "tags": ["rust", "workspace", "speed"],
+    "failure_mode": "A stale workspace-hack causes surprising rebuilds or feature changes; it must be verified in CI.",
+    "version": "0.9.39",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-chef",
+    "name": "cargo-chef",
+    "category": "build",
+    "status": "candidate",
+    "summary": "Caches Rust dependency builds as a container layer.",
+    "why": "Useful when CI builds in Docker and dependency compilation dominates. Not needed with a working compiler cache.",
+    "command": "cargo chef prepare --recipe-path recipe.json && cargo chef cook --release --recipe-path recipe.json",
+    "install": "cargo install cargo-chef --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://github.com/LukeMathWalker/cargo-chef",
+    "tags": ["rust", "docker", "cache"],
+    "failure_mode": "Only helps container builds; a recipe out of sync with the lockfile caches the wrong dependencies.",
+    "version": "0.1.78",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "bacon",
+    "name": "bacon",
+    "category": "build",
+    "status": "candidate",
+    "summary": "Background checker for the local Rust inner loop.",
+    "why": "Keeps check/clippy/test feedback running while editing. A developer convenience, not evidence: results are not recorded.",
+    "command": "bacon clippy",
+    "install": "cargo install bacon --locked",
+    "license": "AGPL-3.0",
+    "docs": "https://dystroy.org/bacon/",
+    "tags": ["rust", "inner-loop"],
+    "failure_mode": "Its output is not evidence; a green bacon pane is not a verified gate.",
+    "version": "3.26.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-deny",
+    "name": "cargo-deny",
+    "category": "security",
+    "status": "conditional",
+    "summary": "Licence, advisory, source and duplicate-version checks for Rust dependencies.",
+    "why": "Belongs in the required gate of Rust repositories with a reviewed deny.toml. Exceptions are narrow and dated.",
+    "command": "cargo deny check",
+    "install": "cargo install cargo-deny --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://embarkstudios.github.io/cargo-deny/",
+    "tags": ["rust", "dependencies", "licence"],
+    "failure_mode": "A permissive deny.toml or broad exceptions make it pass without checking; needs the advisory database (network).",
+    "version": "0.20.2",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-audit",
+    "name": "cargo-audit",
+    "category": "security",
+    "status": "conditional",
+    "summary": "RustSec advisory scan of Cargo.lock.",
+    "why": "Overlaps with cargo-deny advisories and OSV; use one consistently and keep it in the required gate.",
+    "command": "cargo audit",
+    "install": "cargo install cargo-audit --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://rustsec.org/",
+    "tags": ["rust", "advisories"],
+    "failure_mode": "Advisories lag disclosure; ignored IDs must carry a reason and an expiry.",
+    "version": "0.22.2",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-machete",
+    "name": "cargo-machete",
+    "category": "verification",
+    "status": "conditional",
+    "summary": "Finds unused dependencies in Cargo.toml.",
+    "why": "Fast and dependency-free; unused dependencies cost build time and attack surface.",
+    "command": "cargo machete",
+    "install": "cargo install cargo-machete --locked",
+    "license": "MIT",
+    "docs": "https://github.com/bnjbvr/cargo-machete",
+    "tags": ["rust", "dependencies"],
+    "failure_mode": "Text-based: false positives for dependencies used only through macros or build scripts.",
+    "version": "0.9.2",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "cargo-llvm-cov",
+    "name": "cargo-llvm-cov",
+    "category": "verification",
+    "status": "conditional",
+    "summary": "Source-based code coverage for Rust tests.",
+    "why": "Shows untested code paths in a change. Coverage is a map of what ran, not a quality score.",
+    "command": "cargo llvm-cov --workspace --lcov --output-path lcov.info",
+    "install": "cargo install cargo-llvm-cov --locked",
+    "license": "Apache-2.0 / MIT",
+    "docs": "https://github.com/taiki-e/cargo-llvm-cov",
+    "tags": ["rust", "coverage"],
+    "failure_mode": "High coverage with weak assertions proves little; instrumented builds are slower and can change timing.",
+    "version": "0.9.1",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "nix-devenv",
+    "name": "Nix / devenv",
+    "category": "reproducibility",
+    "status": "candidate",
+    "summary": "Declarative, pinned development and CI environments.",
+    "why": "Makes 'works on my machine' reproducible across agents and runners. Steep learning curve; adopt when environment drift is a measured problem.",
+    "command": "devenv shell / nix develop",
+    "install": "https://nixos.org/download",
+    "license": "LGPL-2.1 (Nix) / Apache-2.0 (devenv)",
+    "docs": "https://devenv.sh/",
+    "tags": ["environment", "pinning"],
+    "failure_mode": "Complexity and evaluation time; macOS support differs from Linux.",
+    "version": "Nix 2.35.4 / devenv 2.4.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "mise",
+    "name": "mise",
+    "category": "reproducibility",
+    "status": "candidate",
+    "summary": "Pinned tool versions per repository (toolchains, CLIs).",
+    "why": "Lighter than Nix for pinning tool versions; does not pin system libraries.",
+    "command": "mise install && mise exec -- <cmd>",
+    "install": "https://mise.jdx.dev/",
+    "license": "MIT",
+    "docs": "https://mise.jdx.dev/",
+    "tags": ["environment", "versions"],
+    "failure_mode": "Pins tools, not the OS or system libraries; plugins fetch from the network.",
+    "version": "2026.10.25",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "dagger",
+    "name": "Dagger",
+    "category": "reproducibility",
+    "status": "candidate",
+    "summary": "CI pipelines as code that run the same locally and in CI.",
+    "why": "Useful when pipelines must run identically on laptops, agents and CI. Adds an engine to run and secure.",
+    "command": "dagger call <function>",
+    "install": "https://docs.dagger.io/install",
+    "license": "Apache-2.0",
+    "docs": "https://dagger.io/",
+    "tags": ["ci", "pipelines"],
+    "failure_mode": "Another runtime in the trust path; engine caching needs the same poisoning care as build caches.",
+    "version": "0.21.11",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "gvisor",
+    "name": "gVisor",
+    "category": "isolation",
+    "status": "candidate",
+    "summary": "User-space kernel sandbox for containers running untrusted work.",
+    "why": "Stronger isolation than a plain container for agent tasks on untrusted code.",
+    "command": "docker run --runtime=runsc ...",
+    "install": "https://gvisor.dev/docs/user_guide/install/",
+    "license": "Apache-2.0",
+    "docs": "https://gvisor.dev/",
+    "tags": ["sandbox", "containers"],
+    "failure_mode": "Syscall compatibility gaps and performance overhead for I/O-heavy builds.",
+    "version": "release-20261026.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "firecracker",
+    "name": "Firecracker",
+    "category": "isolation",
+    "status": "candidate",
+    "summary": "MicroVMs for strong per-task isolation.",
+    "why": "VM-level isolation with fast start-up; suits running many untrusted agent tasks on one host.",
+    "command": "firecracker --api-sock <sock>",
+    "install": "https://github.com/firecracker-microvm/firecracker",
+    "license": "Apache-2.0",
+    "docs": "https://firecracker-microvm.github.io/",
+    "tags": ["sandbox", "vm"],
+    "failure_mode": "Linux/KVM only; image, network and storage plumbing is yours to build and secure.",
+    "version": "1.17.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "buck2-bazel",
+    "name": "Buck2 or Bazel (remote execution)",
+    "category": "scale",
+    "status": "candidate",
+    "summary": "Hermetic builds with remote caching and execution.",
+    "why": "Only worth it at a scale where Cargo plus a compiler cache is measurably not enough. Large migration cost.",
+    "command": "bazel build //... / buck2 build //...",
+    "install": "https://bazel.build/install",
+    "license": "Apache-2.0",
+    "docs": "https://bazel.build/",
+    "tags": ["build", "remote-execution"],
+    "failure_mode": "Migration cost and a second build definition that can drift from Cargo; hermeticity breaks quietly.",
+    "version": "Bazel 9.3.1; Buck2 publishes rolling releases",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "temporal",
+    "name": "Temporal",
+    "category": "scale",
+    "status": "candidate",
+    "summary": "Durable workflows for long-running, retryable agent orchestration.",
+    "why": "Consider when agent pipelines need durable retries and state across failures. A service to operate.",
+    "command": "temporal workflow start ...",
+    "install": "https://docs.temporal.io/",
+    "license": "MIT",
+    "docs": "https://temporal.io/",
+    "tags": ["orchestration", "durability"],
+    "failure_mode": "A stateful service to run, secure and upgrade; workflow code has determinism rules that are easy to break.",
+    "version": "1.32.1",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "langfuse",
+    "name": "Langfuse-style agent traces",
+    "category": "observability",
+    "status": "candidate",
+    "summary": "Traces of agent runs: prompts, tool calls, cost and latency.",
+    "why": "Helps find stalled or expensive agents. Traces contain prompts and code; treat them as confidential.",
+    "command": "LANGFUSE_HOST=... (SDK or OpenTelemetry export)",
+    "install": "self-hosted or cloud",
+    "license": "MIT (outside the ee/ directories)",
+    "docs": "https://langfuse.com/",
+    "tags": ["agents", "traces", "cost"],
+    "failure_mode": "Traces can capture secrets and private code; another data store to secure and retain correctly.",
+    "version": "4.72.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "prometheus-grafana",
+    "name": "Prometheus / Grafana",
+    "category": "observability",
+    "status": "candidate",
+    "summary": "Metrics and dashboards for CI duration, queue depth, cache hit rate and cost.",
+    "why": "Adopt when the improvement loop needs trends that evidence files alone do not show.",
+    "command": "prometheus --config.file=prometheus.yml",
+    "install": "self-hosted",
+    "license": "Apache-2.0 (Prometheus) / AGPL-3.0 (Grafana)",
+    "docs": "https://prometheus.io/",
+    "tags": ["metrics", "dashboards"],
+    "failure_mode": "Dashboards nobody reads; metrics without definitions drift from references/metrics.md.",
+    "version": "Prometheus 3.15.1 / Grafana 13.3.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "push-notifications",
+    "name": "Push notifications for exceptions",
+    "category": "observability",
+    "status": "candidate",
+    "summary": "Deliver the exception digest to the human who owns it.",
+    "why": "Attention is scarce: push only `eng digest` items, never every pass.",
+    "command": "./.agents/bin/eng digest <repos> --json | <notifier>",
+    "install": "per channel",
+    "license": "n/a",
+    "docs": "https://github.com/WCKDai/agent-engineering",
+    "tags": ["alerts", "digest"],
+    "failure_mode": "Alert fatigue if it sends passes; silent failure if the notifier breaks, so a missing digest must itself be noticed.",
+    "version": "n/a",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "kicad-kibot",
+    "name": "KiCad with KiBot",
+    "category": "hardware",
+    "status": "candidate",
+    "summary": "Schematic/PCB design with scripted ERC/DRC and fabrication outputs.",
+    "why": "Makes hardware design checks reproducible in CI. Not exercised in any WCKD repository with recorded evidence.",
+    "command": "kibot -c <config>.kibot.yaml",
+    "install": "https://www.kicad.org/download/",
+    "license": "GPL-3.0 (KiCad) / AGPL-3.0 (KiBot)",
+    "docs": "https://github.com/INTI-CMNB/KiBot",
+    "tags": ["electronics", "pcb"],
+    "failure_mode": "Rule checks only cover the rules configured; generated outputs must not be hand-edited.",
+    "version": "KiCad 10.0.7 / KiBot 1.9.1",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "ngspice",
+    "name": "ngspice",
+    "category": "hardware",
+    "status": "candidate",
+    "summary": "Circuit simulation (SPICE).",
+    "why": "Checks power, sensing and driver circuits before fabrication. Results are only as good as the device models.",
+    "command": "ngspice -b <circuit>.cir",
+    "install": "package manager",
+    "license": "BSD-3-Clause (mostly)",
+    "docs": "https://ngspice.sourceforge.io/",
+    "tags": ["electronics", "simulation"],
+    "failure_mode": "Wrong or idealised models give confident wrong answers.",
+    "version": "47",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "renode-qemu",
+    "name": "Renode / QEMU",
+    "category": "hardware",
+    "status": "candidate",
+    "summary": "Emulate microcontrollers and boards to test firmware without devices.",
+    "why": "Runs firmware tests in CI before a bench. Peripheral models are incomplete.",
+    "command": "renode <script>.resc / qemu-system-<arch>",
+    "install": "package manager",
+    "license": "MIT (Renode) / GPL-2.0 (QEMU)",
+    "docs": "https://renode.io/",
+    "tags": ["firmware", "emulation"],
+    "failure_mode": "Missing or inaccurate peripheral models; timing differs from hardware.",
+    "version": "Renode 1.17.0 / QEMU 11.1.3",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "mujoco",
+    "name": "MuJoCo",
+    "category": "hardware",
+    "status": "candidate",
+    "summary": "Physics simulation for robot controllers.",
+    "why": "Tests gaits and controllers in simulation with fixed seeds before hardware.",
+    "command": "python -m <sim_test>",
+    "install": "pip install mujoco",
+    "license": "Apache-2.0",
+    "docs": "https://mujoco.org/",
+    "tags": ["robotics", "simulation"],
+    "failure_mode": "Sim-to-real gap: contact, friction and actuator models differ from the robot.",
+    "version": "3.17.0",
+    "checked": "2026-11-02"
+  },
+  {
+    "id": "hil-runner",
+    "name": "Hardware-in-the-loop runner",
+    "category": "hardware",
+    "status": "candidate",
+    "summary": "A self-hosted runner attached to real devices for bench tests.",
+    "why": "The last step after simulation and emulation. Needs safe test sequences and human approval for anything that can damage hardware.",
+    "command": "./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'",
+    "install": "self-hosted runner",
+    "license": "n/a",
+    "docs": "https://docs.github.com/actions/hosting-your-own-runners",
+    "tags": ["hardware", "runner"],
+    "failure_mode": "Untrusted code on a runner with physical devices; flaky hardware reported as passing.",
+    "version": "n/a",
+    "checked": "2026-11-02"
   }
 ]

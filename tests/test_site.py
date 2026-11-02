@@ -136,6 +136,15 @@ class SiteTests(unittest.TestCase):
     def test_paths_and_repositories_are_usable(self):
         data = json.loads(DATA.read_text(encoding="utf-8"))
         self.assertEqual(len(data["paths"]), 12)
+        for tool in data["tools"]:
+            self.assertTrue(tool["summary"] and tool.get("failure_mode"), tool["id"])
+            self.assertIn(tool["status"], {"adopted", "conditional", "candidate"}, tool["id"])
+            if tool["category"] in {"build", "reproducibility", "isolation", "scale", "hardware"}:
+                self.assertNotEqual(tool["status"], "adopted", f"{tool['id']} has no evidence in this repository")
+            if tool["category"] in {"scale", "hardware"}:
+                self.assertEqual(tool["status"], "candidate", tool["id"])
+            if "version" in tool:
+                self.assertRegex(tool["checked"], r"^\d{4}-\d{2}-\d{2}$")
         skill_ids = {s["id"] for s in data["skills"]}
         self.assertEqual(next(p for p in data["paths"] if p["id"] == "hardware-in-the-loop").get("status"), "candidate")
         for path in data["paths"]:

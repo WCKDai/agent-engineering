@@ -38,6 +38,24 @@ it does not link their code.
 - **Temporal / orchestration frameworks** — the workspace already has `platform/` for runner and
   agent infrastructure. The kit is a library and CLI, not another control plane.
 
+## Build speed, quality gates, isolation, scale and hardware (1.2.0)
+
+Added to the catalog (`site/content/tools.json`) as **conditional** or **candidate** only. None has
+been exercised in this repository with a recorded evidence file, and none has been exercised at
+fleet scale by the kit. Each entry records a role, a failure mode, the version checked and the date
+of the check (2026-11-02, from crates.io, GitHub releases or the project's download page).
+
+- Conditional (use when the condition in the entry holds): sccache with S3-compatible storage,
+  cargo-nextest, mold or lld, cargo-deny, cargo-audit, cargo-machete, cargo-llvm-cov, plus the
+  existing proptest, cargo-fuzz (`fuzzing`) and insta (`golden`) entries.
+- Candidate (not recommended until measured here): cargo-hakari, cargo-chef, bacon, cargo-mutants
+  (`mutation`), Nix/devenv, mise, Dagger, gVisor, Firecracker, Buck2 or Bazel, Temporal,
+  OpenTelemetry, Langfuse-style traces, Prometheus/Grafana, push notifications, KiCad with KiBot,
+  ngspice, Renode/QEMU, MuJoCo and a hardware-in-the-loop runner.
+
+Promotion to **adopted** needs an evidence record from this repository (or a rolled-out repository)
+showing the tool ran in the gate, and the before/after numbers for any speed claim.
+
 ## Installation used in the pilot
 
 ```sh
@@ -63,3 +81,6 @@ uses the Go checksum database. The standalone workflow pins GitHub Actions to co
 - gitleaks (MIT), OSV-Scanner (Apache-2.0) and actionlint (MIT) are permissive.
 - Git is GPL-2.0; the kit invokes it as a separate program.
 - No new dependency was added to any product repository by this work.
+- Catalog entries are references, not dependencies: bacon, KiBot and Grafana are AGPL-3.0, KiCad is
+  GPL-3.0 and Langfuse is MIT outside its `ee/` directories. Check the licence before running one as
+  a service or bundling it.
