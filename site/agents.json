@@ -4,12 +4,12 @@
   "homepage": "https://creed.sh",
   "creed": "https://creed.sh/creed.md",
   "repository": "https://github.com/WCKDai/agent-engineering",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "source": {
-    "commit": "793a066",
-    "committed_at": "2026-11-02T10:39:45+01:00",
+    "commit": "3ecb0e7",
+    "committed_at": "2026-11-02T13:58:06+01:00",
     "dirty": false,
-    "content_sha256": "31967ebab5b80f882542557cddc456d7aefe5a693e26fa9c527308520ad32230"
+    "content_sha256": "0c9e82a6ec76820c32680f58e1d3ff6a2f3436e8558102bab4e188671cd8c7b5"
   },
   "start": {
     "read_first": [
@@ -227,6 +227,78 @@
       "raw_url": "https://creed.sh/skills/improvement-loop/SKILL.md",
       "phase": "report",
       "risk": "low"
+    },
+    {
+      "id": "safe-migrations",
+      "name": "Safe migrations",
+      "description": "Change persisted schemas and data without downtime or a one-way door. Use when adding, altering, renaming or dropping a table, column, index or stored field, or writing an upgrade command between versions. For the contract inventory and consumer analysis use contract-guardian; this skill is the deploy-safe procedure.",
+      "source": "skills/safe-migrations/SKILL.md",
+      "raw_url": "https://creed.sh/skills/safe-migrations/SKILL.md",
+      "phase": "implement",
+      "risk": "high"
+    },
+    {
+      "id": "compatibility-and-deprecation",
+      "name": "Compatibility and deprecation",
+      "description": "Keep old and new versions working together across a rollout, and retire interfaces on a timeline instead of breaking them. Use when a change touches a wire protocol, stored message, public API, SDK or plugin surface, or anything two versions of the software exchange during an upgrade. Use contract-guardian to inventory and classify the change; use safe-migrations for database schemas.",
+      "source": "skills/compatibility-and-deprecation/SKILL.md",
+      "raw_url": "https://creed.sh/skills/compatibility-and-deprecation/SKILL.md",
+      "phase": "plan",
+      "risk": "high"
+    },
+    {
+      "id": "progressive-delivery",
+      "name": "Progressive delivery",
+      "description": "Ship code dark, turn it on gradually through reviewed configuration, and back out by reverting one commit. Use when a change alters user-visible or production behavior that should not switch on for everyone at once, or when planning a rollout, a rollback or a flag removal. For release artifacts, signing and provenance use release-verifier.",
+      "source": "skills/progressive-delivery/SKILL.md",
+      "raw_url": "https://creed.sh/skills/progressive-delivery/SKILL.md",
+      "phase": "report",
+      "risk": "high"
+    },
+    {
+      "id": "test-design",
+      "name": "Test design",
+      "description": "Decide whether a test is worth adding, where it goes and how to make it deterministic. Use when writing, extending or reviewing tests, or when a test is slow, timing-dependent or flaky. For the red-then-green proof of a bug fix use regression-guardian; for quarantining a flaky test use failure-investigator.",
+      "source": "skills/test-design/SKILL.md",
+      "raw_url": "https://creed.sh/skills/test-design/SKILL.md",
+      "phase": "verify",
+      "risk": "medium"
+    },
+    {
+      "id": "diff-hygiene",
+      "name": "Diff hygiene",
+      "description": "Keep a diff to what the task needs, in the repository's own idiom, with no generated drift and no new suppressions. Use before committing any code change, and when reviewing a diff for agent over-engineering. For structural changes with no behavior change use safe-refactor.",
+      "source": "skills/diff-hygiene/SKILL.md",
+      "raw_url": "https://creed.sh/skills/diff-hygiene/SKILL.md",
+      "phase": "implement",
+      "risk": "low"
+    },
+    {
+      "id": "pull-request-craft",
+      "name": "Pull request craft",
+      "description": "Shape a change into a pull request a maintainer can review, revert and trust. Use when splitting work into PRs, writing a PR title, description and commits, or handling conflicts and review comments. For what the reviewer checks use behavior-review.",
+      "source": "skills/pull-request-craft/SKILL.md",
+      "raw_url": "https://creed.sh/skills/pull-request-craft/SKILL.md",
+      "phase": "report",
+      "risk": "low"
+    },
+    {
+      "id": "behavior-review",
+      "name": "Behavior review",
+      "description": "Review a change for what it does to behavior, not how it reads. Use when reviewing a pull request or your own diff before merge, especially changes to state, retries, persisted data, RPCs or anything with more than one entry point. For who must review and how the verdict is recorded use independent-verification.",
+      "source": "skills/behavior-review/SKILL.md",
+      "raw_url": "https://creed.sh/skills/behavior-review/SKILL.md",
+      "phase": "verify",
+      "risk": "high"
+    },
+    {
+      "id": "agent-guidance",
+      "name": "Agent guidance",
+      "description": "Write and maintain the instructions agents follow in a repository: AGENTS.md files, repository skills and agent-facing prompts. Use when creating or changing agent guidance, when agents keep making the same mistake, or when adding an agent to CI. Not for using the guidance on a task; this is for authoring it.",
+      "source": "skills/agent-guidance/SKILL.md",
+      "raw_url": "https://creed.sh/skills/agent-guidance/SKILL.md",
+      "phase": "plan",
+      "risk": "medium"
     }
   ],
   "paths": [
@@ -366,7 +438,9 @@
             "npm test"
           ],
           "skills": [
-            "regression-guardian"
+            "regression-guardian",
+            "test-design",
+            "diff-hygiene"
           ]
         },
         {
@@ -377,6 +451,8 @@
           ],
           "skills": [
             "contract-guardian",
+            "compatibility-and-deprecation",
+            "safe-migrations",
             "security-auditor"
           ]
         },
@@ -386,7 +462,10 @@
             "./.agents/bin/eng evidence list"
           ],
           "skills": [
-            "release-verifier"
+            "release-verifier",
+            "pull-request-craft",
+            "behavior-review",
+            "progressive-delivery"
           ]
         }
       ]
@@ -638,7 +717,8 @@
             "cosign verify-blob --key <pub> --signature <sig> <artifact>"
           ],
           "skills": [
-            "release-verifier"
+            "release-verifier",
+            "progressive-delivery"
           ]
         }
       ]
