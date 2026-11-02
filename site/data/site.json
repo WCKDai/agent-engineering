@@ -6,10 +6,10 @@
   "tagline": "Engineering values, task skills and verifiable tools for agents. Evidence over assertion.",
   "version": "1.2.0",
   "source": {
-    "commit": "03b68b4",
-    "committed_at": "2026-11-02T10:06:58+01:00",
+    "commit": "3102fe7",
+    "committed_at": "2026-11-02T10:13:44+01:00",
     "dirty": true,
-    "content_sha256": "87682621131c1108362c66998975b0b572a01dea8e060c0e68d04e85f4f3d8a8"
+    "content_sha256": "c69d587533accdcde851b8e67ad77b37563dde6aec65881ae81326e6dae6a5c0"
   },
   "commands": {
     "install": "./install.sh --target <repo> --hooks",
@@ -736,7 +736,7 @@
       "command": "n/a",
       "install": "per language indexer",
       "license": "Apache-2.0",
-      "docs": "https://sourcegraph.com/docs/code-search/scip",
+      "docs": "https://github.com/sourcegraph/scip",
       "tags": [
         "index",
         "candidate"
@@ -1090,7 +1090,7 @@
       "command": "./.agents/bin/eng verify --profile full",
       "install": "./install.sh --target <repo>",
       "license": "project license",
-      "docs": "./README.agents.md",
+      "docs": "./docs/README.agents.html",
       "tags": [
         "control-plane",
         "evidence"
@@ -1214,7 +1214,7 @@
       "command": "./evals/agent/run.py --agent-cmd '<command>'",
       "install": "included in kit",
       "license": "project license",
-      "docs": "./evals/agent/README.md",
+      "docs": "https://github.com/WCKDai/agent-engineering/blob/main/evals/agent/README.md",
       "tags": [
         "evaluation",
         "agents"
@@ -1231,7 +1231,7 @@
       "command": "read AGENTS.md first",
       "install": "installer appends one marked section",
       "license": "project license",
-      "docs": "./templates/AGENTS.md",
+      "docs": "https://github.com/WCKDai/agent-engineering/blob/main/templates/AGENTS.md",
       "tags": [
         "policy",
         "discovery"
@@ -1248,7 +1248,7 @@
       "command": "read .agents/skills/<name>/SKILL.md",
       "install": "included in kit",
       "license": "project license",
-      "docs": "./skills/",
+      "docs": "./#skills",
       "tags": [
         "skills",
         "context"
