@@ -46,8 +46,9 @@ coordination.
    versioning policy before choosing.
 3. Add or update fixtures: one payload/input from the previous version, one from the new version.
    Test both directions where the protocol allows it.
-4. For persisted data, write the migration and a rollback. Test on a copy, including a partially
-   migrated state.
+4. For persisted data, follow safe-migrations: expand-only changes roll back by redeploying the
+   previous code, proven to run on the new schema; contract or transform changes need a down
+   migration or data restore, tested on a copy including a partially migrated state.
 5. Update the contract source of truth (schema, OpenAPI, docs) and all generated artifacts with the
    documented command.
 6. Run compatibility tests, the relevant integration tests, and the full gate.
@@ -59,7 +60,8 @@ coordination.
 - Old-version fixtures still parse/execute where compatibility is promised.
 - New-version fixtures round-trip; unknown fields are handled per policy.
 - Generated code is reproducible from the checked-in source of truth.
-- Migration forward and rollback both tested; data invariants checked.
+- Migration forward and its rollback (as safe-migrations defines it) both tested; data invariants
+  checked.
 - The full gate passes; the evidence record lists compatibility checks.
 
 ## Failure and escalation
