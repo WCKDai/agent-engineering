@@ -6,10 +6,10 @@
   "repository": "https://github.com/WCKDai/agent-engineering",
   "version": "1.3.0",
   "source": {
-    "commit": "3ecb0e7",
-    "committed_at": "2026-11-02T13:58:06+01:00",
+    "commit": "1c53574",
+    "committed_at": "2026-11-02T14:00:15+01:00",
     "dirty": false,
-    "content_sha256": "0c9e82a6ec76820c32680f58e1d3ff6a2f3436e8558102bab4e188671cd8c7b5"
+    "content_sha256": "3ad3ed1572db674b46f078efa7fb6d278db520c2e8db97f4fad9d887b335296a"
   },
   "start": {
     "read_first": [
