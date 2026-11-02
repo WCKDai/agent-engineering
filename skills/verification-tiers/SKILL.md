@@ -31,10 +31,15 @@ ran. Anything outside the recorded scope is unverified.
   repository owner's approval.
 - `nightly` has no fallback: an empty nightly profile is `blocked`, never a pass.
 - Do not narrow `--scope` and present the result as covering the whole change.
+- Test selection fails open: if the changed files, the impact map or coverage data cannot be
+  resolved, run everything. Files with global effect (test configuration, shared fixtures, settings,
+  migrations, build scripts) always trigger the full suite; keep that list explicit, with a reason
+  per entry.
 
 ## Workflow
 
-1. Run `eng impact` and pick the tests it lists plus the area's own suite.
+1. Run `eng impact` and pick the tests it lists plus the area's own suite. To reproduce a CI
+   failure, run CI's own selected test list, not a guess.
 2. Inner loop: `./.agents/bin/eng verify --profile fast --scope "<crates, packages or tests run>"`.
 3. Before merge: `./.agents/bin/eng verify --profile full`. This is the gate; its evidence must be
    for the revision that merges.
