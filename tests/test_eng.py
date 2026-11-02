@@ -215,6 +215,311 @@ class VerifyTests(EngTestCase):
         self.assertTrue(any("eng-no-such-scanner" in u for u in data["verdict"]["unverified"]))
 
 
+class VerifyTierTests(EngTestCase):
+    def latest(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())
+
+    def test_empty_nightly_profile_blocks_instead_of_falling_back(self):
+        self.init_basic()
+        res = eng(self.tmp, "verify", "--profile", "nightly")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        data = self.latest()
+        self.assertEqual(data["profile"], "nightly")
+        self.assertEqual(data["verdict"]["status"], "blocked")
+        self.assertEqual(data["commands"], [])
+
+    def test_nightly_runs_its_own_commands(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "fast", "run": "true"}],
+                             "nightly": [{"name": "soak", "run": "false"}]})
+        res = eng(self.tmp, "verify", "--profile", "nightly")
+        self.assertEqual(res.returncode, 1, res.stdout)
+        data = self.latest()
+        self.assertEqual([c["name"] for c in data["commands"]], ["soak"])
+        self.assertEqual(data["verdict"]["status"], "fail")
+
+    def test_scope_and_duration_are_always_recorded(self):
+        self.init_basic()
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        data = self.latest()
+        self.assertEqual(data["scope"], "configured fast commands")
+        self.assertIsInstance(data["duration_s"], float)
+        for optional in ("run", "cost", "cache"):
+            self.assertNotIn(optional, data)
+
+    def test_optional_run_fields_are_hashed_into_the_record(self):
+        self.init_basic()
+        self.repo.write("cache.json", '{"hits": 90, "misses": 10}')
+        res = eng(self.tmp, "verify", "--scope", "crate a only", "--run-id", "r-1", "--builder", "agent-a",
+                  "--verifier", "agent-b", "--cost", "0.42", "--cache-stats", "cache.json")
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        data = self.latest()
+        self.assertEqual(data["scope"], "crate a only")
+        self.assertEqual(data["run"], {"id": "r-1", "builder": "agent-a", "verifier": "agent-b"})
+        self.assertEqual(data["cost"], {"amount": 0.42, "unit": "USD"})
+        self.assertEqual(data["cache"], {"hits": 90, "misses": 10})
+        self.assertEqual(eng(self.tmp, "evidence", "verify").returncode, 0)
+        path = sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1]
+        tampered = json.loads(path.read_text())
+        tampered["run"]["verifier"] = "agent-a"
+        path.write_text(json.dumps(tampered))
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("hash mismatch", res.stdout)
+
+    def test_unreadable_cache_stats_are_unverified_not_dropped(self):
+        self.init_basic()
+        res = eng(self.tmp, "verify", "--cache-stats", "missing.json")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        data = self.latest()
+        self.assertNotIn("cache", data)
+        self.assertTrue(any(u.startswith("cache statistics not recorded") for u in data["verdict"]["unverified"]))
+
+    def test_a_command_that_edits_tracked_files_is_reported(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "edit", "run": "echo changed >> src/lib.py"}]})
+        self.repo.git("add", "-A")
+        self.repo.git("commit", "-qm", "edit config")
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        unverified = self.latest()["verdict"]["unverified"]
+        self.assertIn("working tree changed during verification; commands may have modified files", unverified)
+
+    def test_records_without_the_new_fields_still_verify(self):
+        self.init_basic()
+        logdir = self.tmp / ".agents" / "evidence" / "old"
+        logdir.mkdir(parents=True)
+        legacy = {"schema": "eng-evidence/v1", "id": "old", "finished_at": "2026-10-01T00:00:00Z",
+                  "profile": "fast", "commands": [], "verdict": {"status": "pass"}}
+        eng_lib.write_evidence(self.tmp, legacy, logdir)
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        self.assertIn("2 record(s)", res.stdout)
+
+
+class IndependentVerificationTests(EngTestCase):
+    def setUp(self):
+        super().setUp()
+        self.init_basic()
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["verification"] = {"independent": True}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+
+    def verdict(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())["verdict"]
+
+    def test_full_gate_without_a_verifier_is_blocked(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertTrue(any("independent verification required" in u for u in self.verdict()["unverified"]))
+
+    def test_builder_cannot_verify_its_own_work(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a", "--verifier", "agent-a")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertTrue(any("cannot verify its own work" in u for u in self.verdict()["unverified"]))
+
+    def test_a_different_verifier_passes(self):
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "agent-a", "--verifier", "agent-b")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        self.assertEqual(self.verdict()["status"], "pass")
+
+    def test_a_failure_still_fails_with_a_self_verifier(self):
+        self.install_config({"fast": [{"name": "false", "run": "false"}]})
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["verification"] = {"independent": True}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+        res = eng(self.tmp, "verify", "--profile", "full", "--builder", "a", "--verifier", "a")
+        self.assertEqual(res.returncode, 1, res.stdout)
+
+    def test_fast_profile_is_not_gated(self):
+        res = eng(self.tmp, "verify", "--profile", "fast")
+        self.assertEqual(res.returncode, 0, res.stdout)
+
+
+class QuarantineTests(EngTestCase):
+    def quarantine(self, *entries):
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": list(entries)}))
+
+    def verdict(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())["verdict"]
+
+    def test_active_quarantine_is_reported_unverified(self):
+        self.init_basic()
+        self.quarantine({"test": "tests/test_net.py::test_retry", "owner": "agent-a",
+                         "expires": "2999-01-01", "reason": "flaky on CI runners"})
+        res = eng(self.tmp, "verify")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        verdict = self.verdict()
+        self.assertEqual(verdict["status"], "pass")
+        self.assertTrue(any("tests/test_net.py::test_retry" in u for u in verdict["unverified"]))
+        self.assertIn("quarantined test not verified", res.stdout)
+
+    def test_expired_quarantine_blocks(self):
+        self.init_basic()
+        self.quarantine({"test": "t", "owner": "agent-a", "expires": "2000-01-01", "reason": "flaky"})
+        res = eng(self.tmp, "verify")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertEqual(self.verdict()["status"], "blocked")
+
+    def test_entry_without_an_owner_blocks(self):
+        self.init_basic()
+        self.quarantine({"test": "t", "expires": "2999-01-01", "reason": "flaky"})
+        self.assertEqual(eng(self.tmp, "verify").returncode, 2)
+
+    def test_expiry_boundary_is_inclusive(self):
+        from datetime import date
+        root = self.tmp
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": [
+            {"test": "t", "owner": "o", "expires": "2026-11-02", "reason": "r"}]}))
+        active, problems = eng_lib.load_quarantine(root, today=date(2026, 11, 2))
+        self.assertEqual((len(active), problems), (1, []))
+        active, problems = eng_lib.load_quarantine(root, today=date(2026, 11, 3))
+        self.assertEqual(len(active), 0)
+        self.assertEqual(len(problems), 1)
+
+
+class DigestTests(EngTestCase):
+    def digest(self, *args, root=None):
+        res = eng(root or self.tmp, "digest", "--json", *args)
+        return res.returncode, json.loads(res.stdout)["items"]
+
+    def kinds(self, items):
+        return sorted({i["kind"] for i in items})
+
+    def test_clean_passing_repository_needs_nothing(self):
+        self.init_basic()
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        code, items = self.digest()
+        self.assertEqual((code, items), (0, []))
+        res = eng(self.tmp, "digest")
+        self.assertIn("nothing needs you", res.stdout)
+
+    def test_no_evidence_is_an_exception(self):
+        self.init_basic()
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertEqual(self.kinds(items), ["no-evidence"])
+
+    def test_failure_blocked_and_unverified_are_all_listed(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "false", "run": "false"}], "nightly": []})
+        eng(self.tmp, "verify")
+        eng(self.tmp, "verify", "--profile", "nightly")
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertIn("fail", self.kinds(items))
+        self.assertIn("blocked", self.kinds(items))
+        self.assertIn("unverified", self.kinds(items))
+        self.assertTrue(any("command:false" in i["detail"] for i in items if i["kind"] == "fail"))
+
+    def test_a_newer_pass_on_another_profile_does_not_hide_a_failure(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "true", "run": "true"}], "nightly": [{"name": "false", "run": "false"}]})
+        eng(self.tmp, "verify", "--profile", "nightly")
+        eng(self.tmp, "verify", "--profile", "fast")
+        code, items = self.digest()
+        self.assertTrue(any(i["kind"] == "fail" and i["detail"].startswith("nightly") for i in items))
+
+    def test_tampered_evidence_is_reported(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        path = next((self.tmp / ".agents" / "evidence").glob("*.json"))
+        data = json.loads(path.read_text())
+        data["commands"] = []
+        path.write_text(json.dumps(data))
+        code, items = self.digest()
+        self.assertIn("evidence-tampered", self.kinds(items))
+
+    def test_expiring_quarantine_and_spend_over_cap(self):
+        from datetime import date, timedelta
+        self.init_basic()
+        soon = (date.today() + timedelta(days=2)).isoformat()
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": [
+            {"test": "t", "owner": "agent-a", "expires": soon, "reason": "flaky"}]}))
+        eng(self.tmp, "verify", "--cost", "6")
+        eng(self.tmp, "verify", "--cost", "5")
+        eng(self.tmp, "verify")
+        code, items = self.digest("--cost-cap", "10")
+        kinds = self.kinds(items)
+        self.assertIn("quarantine-expiring", kinds)
+        self.assertIn("over-spend", kinds)
+        self.assertIn("spend-unknown", kinds)
+        code, items = self.digest("--cost-cap", "100")
+        self.assertNotIn("over-spend", self.kinds(items))
+
+    def test_malformed_records_are_reported_not_crashed_on(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        eng(self.tmp, "verify")
+        records = sorted((self.tmp / ".agents" / "evidence").glob("*.json"))
+        records[0].write_text("[]")
+        data = json.loads(records[1].read_text())
+        data["verdict"] = "pass"
+        records[1].write_text(json.dumps(data))
+        index = self.tmp / ".agents" / "evidence" / "index.jsonl"
+        index.write_text(index.read_text() + '"not an object"\n{"id": "x"}\n')
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1, res.stdout + res.stderr)
+        self.assertNotIn("Traceback", res.stderr)
+        self.assertIn("not a JSON object", res.stdout)
+        self.assertIn("malformed index entry", res.stdout)
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertIn("evidence-tampered", self.kinds(items))
+
+    def test_index_entry_outside_the_repository_is_refused(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        index = self.tmp / ".agents" / "evidence" / "index.jsonl"
+        index.write_text(index.read_text() + json.dumps({"id": "y", "file": "../../outside.json", "sha256": "0"}) + "\n")
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("outside the evidence directory", res.stdout)
+
+    def test_spend_is_capped_per_unit(self):
+        self.init_basic()
+        eng(self.tmp, "verify", "--cost", "6")
+        eng(self.tmp, "verify", "--cost", "5", "--cost-unit", "EUR")
+        code, items = self.digest("--cost-cap", "10")
+        self.assertNotIn("over-spend", self.kinds(items))
+        eng(self.tmp, "verify", "--cost", "6", "--cost-unit", "EUR")
+        code, items = self.digest("--cost-cap", "10")
+        over = [i["detail"] for i in items if i["kind"] == "over-spend"]
+        self.assertEqual(len(over), 1)
+        self.assertIn("EUR", over[0])
+
+    def test_string_cost_cap_in_config(self):
+        self.init_basic()
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["budget"] = {"cost_cap": "1"}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+        eng(self.tmp, "verify", "--cost", "2")
+        res = eng(self.tmp, "digest", "--json")
+        self.assertNotIn("Traceback", res.stderr)
+        self.assertIn("over-spend", res.stdout)
+
+    def test_stalled_worktree_is_reported(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        self.assertEqual(eng(self.tmp, "worktree", "create", "unit-a", "--owner", "agent-a",
+                             "--allow-dirty").returncode, 0)
+        code, items = self.digest("--stale-hours", "1000")
+        self.assertNotIn("stalled", self.kinds(items))
+        code, items = self.digest("--stale-hours", "0")
+        stalled = [i for i in items if i["kind"] == "stalled"]
+        self.assertEqual(len(stalled), 1)
+        self.assertIn("agent-a", stalled[0]["detail"])
+
+    def test_several_repositories_in_one_digest(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        other = self.tmp / "missing-repo"
+        res = eng(self.tmp, "digest", "--json", str(self.tmp), str(other))
+        items = json.loads(res.stdout)["items"]
+        self.assertEqual(res.returncode, 1)
+        self.assertEqual([i["kind"] for i in items], ["unreadable"])
+
+
 class ActionPinTests(EngTestCase):
     def workflow(self, ref):
         self.repo.write(".github/workflows/test.yml",
@@ -434,7 +739,7 @@ class InitTests(EngTestCase):
 class SkillTests(unittest.TestCase):
     def test_skills_have_frontmatter_and_required_sections(self):
         skills = sorted((KIT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(len(skills), 10)
+        self.assertEqual(len(skills), 17)
         for path in skills:
             text = path.read_text(encoding="utf-8")
             self.assertTrue(text.startswith("---\n"), path)

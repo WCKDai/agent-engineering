@@ -6,7 +6,10 @@ successful. `eng evidence verify` recomputes content hashes and checks the chain
 
 ## Record shape (`eng-evidence/v1`)
 
-- `id`, `started_at`, `finished_at`, `profile`, `command`, `tool.version`
+- `id`, `started_at`, `finished_at`, `profile` (`fast`, `full` or `nightly`), `command`, `tool.version`
+- `scope`: what the run covered (`--scope`, or the configured profile commands); anything outside it
+  is unverified, never pass
+- `duration_s`: wall-clock duration of the whole run
 - `git`: HEAD, branch, dirty state, diff hash, untracked count/hash; `git_before` records the state
   before commands ran, so a check that modified the tree is visible
 - `config`: path, content hash, whether it existed
@@ -16,6 +19,18 @@ successful. `eng evidence verify` recomputes content hashes and checks the chain
 - `impact`: changed files, symbols, references, likely tests, contract surfaces (optional)
 - `verdict`: `pass`, `fail` or `blocked`; required failures; explicit `unverified` list
 - `sha256`: hash of the record without this field; each index entry also records the previous hash
+
+Optional fields, present only when supplied (added in 1.2.0):
+
+- `run`: `id`, `builder`, `verifier` (`--run-id`, `--builder`, `--verifier`, or `ENG_RUN_ID`,
+  `ENG_BUILDER`, `ENG_VERIFIER`). Identities are declared by the caller, not authenticated.
+- `cost`: `amount` and `unit` (`--cost`, `--cost-unit`), recorded as given
+- `cache`: the JSON object from `--cache-stats <file>` (for example `sccache --show-stats --stats-format json`)
+
+Migration: these fields are additive within `eng-evidence/v1`. Records written by 1.1.x carry none
+of them, and `scope`/`duration_s` appear only from 1.2.0; `eng evidence verify` hashes whatever
+fields a record holds, so old and new records verify in the same chain. Consumers must treat every
+field added here as optional.
 
 ## Status meanings
 

@@ -12,7 +12,7 @@ not run a background service, require a database, or call a model.
 .agents/
   bin/eng                 entry point
   lib/eng.py              one dependency-free CLI
-  skills/                 ten task skills (SKILL.md)
+  skills/                 seventeen task skills (SKILL.md)
   references/             lifecycle, evidence and trust policy
   config/                 semgrep, gitleaks and guard allowlist
   hooks/                  pre-commit and pre-push
@@ -42,6 +42,7 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `eng init [--force] [--hooks] [--ci]` | Write config, AGENTS section, harness links, hooks, CI. |
 | `eng verify --profile fast` | Run configured fast commands; write evidence. |
 | `eng verify --profile full` | Fast/full commands + required security scans. |
+| `eng verify --profile nightly` | Configured nightly commands (fuzzing, mutation, benchmarks, heavy suites) + security scans. No fallback: an empty nightly profile is blocked. |
 | `eng impact --base <ref>` | Changed files, symbols, references, likely tests, contracts. |
 | `eng security [--json] [--require]` | gitleaks, semgrep, OSV, actionlint, zizmor when installed. |
 | `eng audit-actions` | Require every `uses:` to be a 40-hex commit SHA (or a reviewed exception). |
@@ -51,6 +52,7 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `eng guard staged` | Pre-commit guard: secrets, conflict markers, sensitive/large files. |
 | `eng worktree create/list/remove` | Isolated `.worktrees/<name>` with an owner record. |
 | `eng evidence verify/list/show` | Recompute hashes and check the evidence chain. |
+| `eng digest [repos...] [--json]` | Exception-only "needs you" list across repositories. |
 | `eng doctor [--json]` | Tool and repository readiness. |
 
 `--json` works before or after the subcommand. `--root <path>` selects another repository.
@@ -69,6 +71,13 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `contract-guardian` | APIs, schemas, formats, migrations. |
 | `failure-investigator` | Reproduce, root-cause, permanent guard. |
 | `release-verifier` | Artifact-bound release evidence and rollback. |
+| `verification-tiers` | fast / full / nightly profiles and their recorded scope. |
+| `independent-verification` | A verifier other than the builder certifies the gate. |
+| `parallel-agent-work` | Many agents on many repositories: ownership, machine limits, merge queue, handoff. |
+| `build-performance` | Faster builds and CI with before/after numbers and an unchanged gate. |
+| `agent-sandboxing` | Isolated execution, scoped short-lived credentials, egress allowlist. |
+| `autopilot-readiness` | Attended → supervised autopilot → autopilot, one repository at a time. |
+| `improvement-loop` | Weekly: worst bottleneck, one change, measured, kept or reverted. |
 
 Skills activate from their frontmatter description. They are task-specific; repository rules stay in
 `AGENTS.md`.
@@ -85,8 +94,48 @@ verdict. Each record is linked to the previous one by hash.
 ./.agents/bin/eng evidence show <id>
 ```
 
+`verify` records the profile, a `scope` (`--scope "<what ran>"`, default the configured commands) and
+the total duration. `--run-id`, `--builder`, `--verifier`, `--cost` and `--cache-stats <file>` (a JSON file) add
+optional fields. Anything outside the recorded scope is unverified.
+
+Set `"verification": {"independent": true}` in `engineering.json` to require that a `full` or
+`nightly` gate names a `--verifier` different from the `--builder`; otherwise the gate is `blocked`.
+Identities are declared by the caller, not authenticated: this records separation of duties, it
+does not prove it.
+
+A flaky test is quarantined in `.agents/quarantine.json` (`eng-quarantine/v1`): each entry names the
+`test`, an `owner`, an `expires` date (`YYYY-MM-DD`) and a `reason`. The file only declares the
+quarantine; the repository's test command must exclude the test itself. While active, every
+`verify` lists the test as unverified. An expired or incomplete entry blocks the gate.
+
+```json
+{"schema": "eng-quarantine/v1", "entries": [
+  {"test": "tests/test_net.py::test_retry", "owner": "agent-a", "expires": "2026-11-16", "reason": "times out on shared runners; see #123"}
+]}
+```
+
 Evidence is local and gitignored; CI uploads it. Never edit a record to change a verdict. A check
 that did not run is `skipped` or `blocked`, never `pass`. See `references/evidence.md`.
+
+## Digest
+
+```sh
+./.agents/bin/eng digest ~/src/repo-a ~/src/repo-b --cost-cap 50
+```
+
+`eng digest` reads each repository's evidence, quarantine file and worktrees and lists only what
+needs a human: the latest `fail` or `blocked` verdict per profile, every `unverified` note in those
+records, a broken or tampered chain, a repository with no evidence, expired or soon-expiring
+quarantines, and worktrees with no commit or evidence for
+`--stale-hours` (default 24). Spend is checked only when a cap is set (`--cost-cap`, or
+`budget.cost_cap` and `budget.window_days` in `engineering.json`): it then reports each unit whose
+total in the window exceeds the cap, and runs in the window with no recorded cost. Without a cap,
+cost is not checked and missing costs are not reported. The cap is an alert threshold; nothing stops
+a run when it is reached. It exits `0` when nothing needs you and `1` otherwise; `--json` emits
+`eng-digest/v1`. Within the latest record of each profile it never drops a blocked, skipped or
+unverified item (skipped checks appear as unverified notes). An exception in an older record that a
+newer record of the same profile superseded is not repeated. It reads
+local files only; collecting CI evidence artifacts into those directories is the caller's job.
 
 ## Worktrees and parallelism
 
@@ -161,3 +210,7 @@ the previous `.agents/` directory; evidence records remain valid because their s
 - OSV needs network and a supported lockfile.
 - The agent evaluation harness is a separate, opt-in layer; it is not a model benchmark.
 - A green gate is evidence about the checks that ran, not a proof of correctness or security.
+- Builder and verifier identities are declared, not authenticated.
+- Quarantine is declarative; the repository's test command must exclude the test.
+- `eng digest` reads local files only; the delivery metrics are defined, not computed.
+- The 1.2.0 catalog additions are conditional or candidate and have not been exercised at fleet scale.

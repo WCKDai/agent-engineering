@@ -159,7 +159,7 @@
     if (state.toolCat !== "all" && tool.category !== state.toolCat) return false;
     const q = state.toolQuery.trim().toLowerCase();
     if (!q) return true;
-    return [tool.id, tool.name, tool.category, tool.status, tool.summary, tool.why, tool.command, ...(tool.tags || [])]
+    return [tool.id, tool.name, tool.category, tool.status, tool.summary, tool.why, tool.failure_mode || "", tool.command, ...(tool.tags || [])]
       .join(" ").toLowerCase().includes(q);
   }
 
@@ -175,6 +175,7 @@
         </div>
         <p class="tool-summary">${esc(tool.summary)}</p>
         <p class="tool-why">${esc(tool.why)}</p>
+        ${tool.failure_mode ? `<p class="tool-why"><strong>Fails when:</strong> ${esc(tool.failure_mode)}</p>` : ""}
         <div class="tool-foot">
           <span class="tool-command">${esc(tool.command)}</span>
           <a class="tool-link" href="${esc(tool.docs)}" target="_blank" rel="noreferrer">docs ↗</a>

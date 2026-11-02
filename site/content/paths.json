@@ -106,5 +106,63 @@
       {"title": "Check the release contract", "body": "Check version, changelog, notes, migration and rollback. Verify the artifact hash and any supplied signature/SBOM.", "commands": ["./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>"], "skills": ["release-verifier", "contract-guardian"], "done": "The release record is written and reproducible."},
       {"title": "Get approval and publish", "body": "Obtain explicit human approval. Publish through the approved channel. Verify the public artifact and smoke-test it.", "commands": ["cosign verify-blob --key <pub> --signature <sig> <artifact>"], "skills": ["release-verifier"], "done": "The published digest matches the candidate; rollback is ready."}
     ]
+  },
+  {
+    "id": "parallel-agents",
+    "title": "Run many agents in parallel safely",
+    "glyph": "09",
+    "summary": "Many agents on many repositories: one task, one worktree, one sandbox, one PR, and a queue instead of collisions.",
+    "when": "Several agents or sub-agents work at once, share a build machine, or target the same branch.",
+    "steps": [
+      {"title": "Write the ownership table", "body": "List each task with its owner, owned paths, verification command and dependencies. No path has two owners; shared files go to one integration owner.", "commands": ["./.agents/bin/eng impact --base origin/main"], "skills": ["parallel-agent-work", "change-impact"], "done": "A table with no overlapping owned paths is recorded in the work item."},
+      {"title": "Set machine limits", "body": "Cap concurrent worktrees and build jobs so extra work queues instead of contending. Isolate each task in its own sandbox with scoped, short-lived credentials.", "commands": ["./.agents/bin/eng worktree list", "CARGO_BUILD_JOBS=<n> nice -n 10 <build>"], "skills": ["parallel-agent-work", "agent-sandboxing"], "done": "The cap, the sandbox definition and the token scopes are written down."},
+      {"title": "Start one worktree per task", "body": "Each agent gets its own worktree, branch, scope, budget, stop conditions and handoff format.", "commands": ["./.agents/bin/eng worktree create <task> --owner <agent>"], "skills": ["parallel-agent-work"], "done": "Every running agent maps to exactly one worktree with an owner record."},
+      {"title": "Verify each task on its own", "body": "Baseline, implement, run the fast gate, then the full gate with the builder and an independent verifier recorded.", "commands": ["./.agents/bin/eng verify --profile fast", "./.agents/bin/eng verify --profile full --builder <agent> --verifier <other>"], "skills": ["verification-tiers", "independent-verification"], "done": "Each task has full evidence on its own head, verified by a different identity."},
+      {"title": "Land through the queue", "body": "Merge one change at a time through the merge queue or auto-merge with required checks. Update dependent branches and re-run their gate after each merge.", "commands": ["gh pr merge <n> --squash --auto"], "skills": ["parallel-agent-work"], "done": "Main stays green; each merged revision has passing gate evidence."},
+      {"title": "Watch by exception", "body": "Read the digest instead of every run. Clean up finished worktrees.", "commands": ["./.agents/bin/eng digest <repo>...", "./.agents/bin/eng worktree remove <task>"], "skills": ["parallel-agent-work"], "done": "The digest is empty or every item has an owner and a next step."}
+    ]
+  },
+  {
+    "id": "fast-rust-ci",
+    "title": "Make a Rust CI fast without lowering the gate",
+    "glyph": "10",
+    "summary": "Measure, then cache, link, test and scope smarter — with before/after numbers and the same required checks.",
+    "when": "Rust builds or CI runs are the bottleneck for agents or reviewers.",
+    "steps": [
+      {"title": "Baseline", "body": "Time cold and warm builds and the CI run, per crate and per step, with enough runs to see variance. Record the list of required checks.", "commands": ["hyperfine --warmup 1 'cargo build --locked'", "cargo build --timings", "./.agents/bin/eng verify --profile full"], "skills": ["build-performance", "performance-engineer"], "done": "Before numbers, machine, toolchain and the required-check list are recorded."},
+      {"title": "Add a shared compiler cache", "body": "Use a compiler cache on S3-compatible storage. Only main-branch CI writes; PR builds and agents read. Separate prefixes per project and toolchain; fixed workdir and path remapping; incremental compilation off in CI.", "commands": ["sccache --show-stats --stats-format json > cache.json", "./.agents/bin/eng verify --profile full --cache-stats cache.json"], "skills": ["build-performance", "agent-sandboxing"], "done": "Cache hit rate is recorded in evidence; write credentials exist only in main-branch CI."},
+      {"title": "Faster linker and test runner", "body": "Try one at a time: a faster linker (mold or lld), then cargo-nextest. Measure each separately. nextest does not run doctests, so keep `cargo test --doc` in the gate.", "commands": ["hyperfine '<build with linker>'", "cargo nextest run --locked", "cargo test --doc --locked"], "skills": ["build-performance"], "done": "Each change has its own before/after numbers; the test set, doctests included, is unchanged."},
+      {"title": "Scope tests to the change", "body": "Use the impact list for the fast profile; keep the full suite in the merge gate and heavy suites in nightly.", "commands": ["./.agents/bin/eng impact --base origin/main", "./.agents/bin/eng verify --profile fast --scope '<crates tested>'"], "skills": ["verification-tiers", "change-impact"], "done": "The fast profile states its scope; the full gate still runs everything it ran before."},
+      {"title": "Keep or revert", "body": "Compare after with before under the same conditions. Keep only changes that are faster with the same checks.", "commands": ["./.agents/bin/eng perf-check --baseline <before.json> --current <after.json>"], "skills": ["build-performance", "improvement-loop"], "done": "Kept changes carry their numbers; anything slower or narrower is reverted."}
+    ]
+  },
+  {
+    "id": "autopilot",
+    "title": "Promote a repository to autopilot",
+    "glyph": "11",
+    "summary": "Reduce supervision one tier at a time, one repository at a time, on a week of evidence.",
+    "when": "Someone proposes letting agents merge or run a repository without per-change review.",
+    "steps": [
+      {"title": "Check the controls", "body": "Reproducible environment, passing full profile, tiered CI, merge queue, rollback path, spend cap, alerting, independent verification and a named human. Each needs a link or a command result.", "commands": ["./.agents/bin/eng doctor", "./.agents/bin/eng verify --profile full", "./.agents/bin/eng audit-actions"], "skills": ["autopilot-readiness"], "done": "A checklist with evidence for every item is in the repository's work item."},
+      {"title": "Rehearse the rollback", "body": "Revert a harmless change (or redeploy the previous version) and confirm the system returns to the previous state.", "commands": ["git revert <sha>", "./.agents/bin/eng verify --profile full"], "skills": ["autopilot-readiness", "release-verifier"], "done": "The rollback was exercised and its evidence is linked."},
+      {"title": "Turn on the digest", "body": "Deliver `eng digest` daily to the named human and set the budget cap.", "commands": ["./.agents/bin/eng digest <repo> --cost-cap <cap>"], "skills": ["autopilot-readiness", "improvement-loop"], "done": "The human receives the digest and every item has an owner."},
+      {"title": "Promote one tier", "body": "The owner promotes the repository one tier. Other repositories wait.", "commands": ["gh api repos/<owner>/<repo>/rulesets  # confirm required checks and the merge queue"], "skills": ["autopilot-readiness"], "done": "The tier decision and date are recorded by the owner."},
+      {"title": "Hold for a week", "body": "Collect a week of evidence: merges, digest items, reverts and cost. Demote on a failed rollback, an unexplained revert, an overspend or an ignored digest item.", "commands": ["./.agents/bin/eng digest <repo> --json"], "skills": ["autopilot-readiness", "improvement-loop"], "done": "A week of evidence shows the tier holds before the next repository is considered."}
+    ]
+  },
+  {
+    "id": "hardware-in-the-loop",
+    "title": "Hardware-in-the-loop (candidate)",
+    "glyph": "12",
+    "status": "candidate",
+    "summary": "Candidate path, not yet exercised: schematics, simulation and a device bench behind the same evidence standard.",
+    "when": "A project has electronics, firmware or a robot whose behaviour software tests cannot cover.",
+    "steps": [
+      {"title": "Check the design files", "body": "Run electrical and design-rule checks and generate fabrication outputs reproducibly from the source files.", "commands": ["kibot -c <config>.kibot.yaml"], "skills": ["verification-tiers"], "done": "ERC/DRC results and generated outputs are attached to evidence; nothing is hand-edited."},
+      {"title": "Simulate the circuit", "body": "Simulate the circuits that matter (power, sensing, drivers) with stated models and limits.", "commands": ["ngspice -b <circuit>.cir"], "skills": ["verification-tiers", "performance-engineer"], "done": "Simulation results and the model assumptions are recorded."},
+      {"title": "Emulate the firmware", "body": "Run firmware tests on an emulator before touching a device.", "commands": ["renode <script>.resc", "qemu-system-<arch> ..."], "skills": ["regression-guardian", "verification-tiers"], "done": "Firmware tests pass in emulation with recorded evidence."},
+      {"title": "Simulate the mechanism", "body": "For robots, run the controller against a physics simulation with fixed seeds.", "commands": ["python <sim_test>.py  # MuJoCo"], "skills": ["verification-tiers"], "done": "Simulated runs pass with seeds and tolerances recorded."},
+      {"title": "Run on the bench", "body": "A self-hosted runner attached to real hardware runs a short, safe test sequence behind a human-approved gate.", "commands": ["./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'"], "skills": ["agent-sandboxing", "verification-tiers"], "done": "Bench results are in nightly evidence; a human approved any test that can damage hardware."}
+    ]
   }
 ]

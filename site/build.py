@@ -43,7 +43,21 @@ SKILL_META = {
     "contract-guardian": {"phase": "verify", "risk": "high", "tags": ["api", "schema", "migration", "compatibility"], "order": 8},
     "failure-investigator": {"phase": "understand", "risk": "medium", "tags": ["incident", "root-cause", "reproduction"], "order": 9},
     "release-verifier": {"phase": "report", "risk": "high", "tags": ["release", "artifact", "provenance", "rollback"], "order": 10},
+    "verification-tiers": {"phase": "verify", "risk": "medium", "tags": ["profiles", "scope", "nightly"], "order": 11},
+    "independent-verification": {"phase": "verify", "risk": "high", "tags": ["review", "separation", "gate"], "order": 12},
+    "parallel-agent-work": {"phase": "plan", "risk": "high", "tags": ["fleet", "worktrees", "merge-queue", "limits"], "order": 13},
+    "build-performance": {"phase": "baseline", "risk": "medium", "tags": ["ci", "cache", "rust", "build-time"], "order": 14},
+    "agent-sandboxing": {"phase": "plan", "risk": "high", "tags": ["isolation", "credentials", "egress"], "order": 15},
+    "autopilot-readiness": {"phase": "report", "risk": "high", "tags": ["autonomy", "tiers", "checklist"], "order": 16},
+    "improvement-loop": {"phase": "report", "risk": "low", "tags": ["metrics", "weekly", "bottleneck"], "order": 17},
 }
+
+
+# Files this script writes. The recorded source revision ignores them: it is the last commit that
+# changed an input, so committing the outputs does not make the next rebuild differ.
+GENERATED = ["site/data", "site/agents.json", "site/llms.txt", "site/creed.md", "site/skills",
+             "site/references", "site/docs", "site/downloads"]
+SOURCE_PATHSPEC = ["--", ".", *(f":(exclude){path}" for path in GENERATED)]
 
 
 def run_git(*args: str) -> str:
@@ -288,7 +302,7 @@ def build_creed(principles, guardrails, phases, skills, commands):
     """One agent handoff, derived from the same policy the human portal displays."""
     lines = [
         "# CREED — engineering for agents", "",
-        f"Canonical guide: {HOMEPAGE}/creed.md", "",
+        f"Canonical guide: {HOMEPAGE}/creed.md · version {VERSION}", "",
         "Read this before a nontrivial engineering task. Read AGENTS.md first: it is the",
         "repository's authoritative policy. Its commands and the user's authorized scope override",
         "this general guide. This guide grants no permission to access credentials, deploy, delete,",
@@ -354,12 +368,12 @@ def main():
     validate_repo_provenance(repos)
 
     skills = sorted((parse_skill(p) for p in (ROOT / "skills").glob("*/SKILL.md")), key=lambda s: s["order"])
-    if len(skills) != 10:
-        raise SystemExit(f"expected 10 skills, found {len(skills)}")
+    if len(skills) != len(SKILL_META) or any(s["id"] not in SKILL_META for s in skills):
+        raise SystemExit(f"expected the {len(SKILL_META)} skills in SKILL_META, found {sorted(s['id'] for s in skills)}")
 
-    commit = run_git("rev-parse", "--short", "HEAD") or "uncommitted"
-    commit_date = run_git("log", "-1", "--format=%cI") or datetime.now(timezone.utc).isoformat()
-    dirty = bool(run_git("status", "--porcelain", "--untracked-files=no"))
+    commit = run_git("log", "-1", "--format=%h", *SOURCE_PATHSPEC) or "uncommitted"
+    commit_date = run_git("log", "-1", "--format=%cI", *SOURCE_PATHSPEC) or datetime.now(timezone.utc).isoformat()
+    dirty = bool(run_git("status", "--porcelain", "--untracked-files=no", *SOURCE_PATHSPEC))
     content_payload = {"skills": skills, "tools": tools, "paths": paths, "principles": principles,
                        "phases": phases, "guardrails": guardrails, "repos": repos}
     content_hash = hashlib.sha256(canonical(content_payload).encode("utf-8")).hexdigest()
@@ -372,6 +386,8 @@ def main():
         "security": "./.agents/bin/eng security --json",
         "actions": "./.agents/bin/eng audit-actions",
         "evidence": "./.agents/bin/eng evidence verify",
+        "nightly": "./.agents/bin/eng verify --profile nightly",
+        "digest": "./.agents/bin/eng digest <repo>...",
         "worktree": "./.agents/bin/eng worktree create <task> --owner <agent>",
         "release": "./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>",
     }
@@ -386,6 +402,13 @@ def main():
         "Only the pilot and local review branches have been exercised; other repositories are not yet rolled out.",
         "The agent evaluation harness is a smoke test with two tasks, not a statistical model benchmark.",
         "Evidence is hash-chained locally but not signed; CI artifact retention is the external trust anchor.",
+        "Builder and verifier identities in evidence are declared by the caller, not authenticated.",
+        "Quarantine is declarative: the repository's test command must exclude the test; the kit reports it as unverified and blocks on expiry.",
+        "eng digest reads local evidence, quarantine files and worktrees; it does not fetch CI artifacts, forge state or provider spend.",
+        "The delivery metrics are defined in references/metrics.md; the kit records inputs but does not compute them.",
+        "Machine-level concurrency caps are guidance; the kit enforces only parallel.max_worktrees per repository.",
+        "The build-speed, quality-gate, reproducibility, isolation, scale, observability and hardware tools are conditional or candidate; none has been exercised in this repository with recorded evidence or at fleet scale.",
+        "No repository has been promoted with the autopilot-readiness checklist yet; the hardware-in-the-loop path is a candidate.",
         "The kit does not generate SBOMs or signatures; release-check can record and verify supplied material.",
     ]
 
@@ -402,7 +425,7 @@ def main():
         "schema": "agent-engineering-site/v1",
         "title": "CREED",
         "homepage": HOMEPAGE,
-        "repository": "https://github.com/wckdboy/agent-engineering",
+        "repository": "https://github.com/WCKDai/agent-engineering",
         "tagline": "Engineering values, task skills and verifiable tools for agents. Evidence over assertion.",
         "version": VERSION,
         "source": {"commit": commit, "committed_at": commit_date, "dirty": dirty, "content_sha256": content_hash},
@@ -443,11 +466,12 @@ def main():
         "skills": [{"id": s["id"], "name": s["name"], "description": s["description"],
                      "source": s["source_path"], "raw_url": f"{HOMEPAGE}/{s['source_path']}",
                      "phase": s["phase"], "risk": s["risk"]} for s in skills],
-        "paths": [{"id": p["id"], "title": p["title"], "summary": p["summary"],
+        "paths": [{"id": p["id"], "title": p["title"], "summary": p["summary"], "status": p.get("status", "documented"),
                     "steps": [{"title": st["title"], "commands": st["commands"], "skills": st["skills"]} for st in p["steps"]]}
                    for p in paths],
         "tools": [{"id": t["id"], "name": t["name"], "category": t["category"], "status": t["status"],
-                    "summary": t["summary"], "command": t["command"]} for t in tools],
+                    "summary": t["summary"], "failure_mode": t["failure_mode"], "command": t["command"],
+                    **({"version": t["version"], "checked": t["checked"]} if "version" in t else {})} for t in tools],
         "repos": repos,
         "guardrails": guardrails,
         "limits": limits,
@@ -458,7 +482,7 @@ def main():
     llms = [
         "# CREED",
         "",
-        "> CREED is WCKD's engineering guide for agents: values, ten task skills, one verification CLI and evidence, not assertion.",
+        f"> CREED is WCKD's engineering guide for agents: values, {len(skills)} task skills, one verification CLI and evidence, not assertion.",
         "",
         f"Read first: {HOMEPAGE}/creed.md",
         "",

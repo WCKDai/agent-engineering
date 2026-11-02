@@ -77,8 +77,26 @@ not a proof of correctness or security.
 17. **Config trust.** `.agents/engineering.json` commands run with CI privileges. A malicious PR can
     change them. Review the config like CI; do not run the kit on untrusted forks with production
     secrets.
-18. **No cross-repository metrics store.** Each repository has its own evidence chain. Aggregating
-    pass rate, cost, latency and escaped regressions across the workspace is a later step.
+18. **No cross-repository metrics store.** Each repository has its own evidence chain. `eng digest`
+    (1.2.0) reads several local repositories for exceptions, but nothing aggregates pass rate, cost,
+    latency or escaped regressions over time. `references/metrics.md` defines the metrics; the kit
+    does not compute them.
+19. **Declared identities.** `run.builder` and `run.verifier` are whatever the caller passes. The
+    independent-verification gate records separation of duties; it cannot prove it. Harness logs
+    remain the evidence of which run did what.
+20. **Quarantine is declarative.** `.agents/quarantine.json` makes a quarantined test visible as
+    unverified and blocks on expiry, but the repository's test command must exclude the test; the kit
+    does not.
+21. **Digest is local.** `eng digest` reads evidence, quarantine files and worktrees on disk. It does
+    not fetch CI artifacts, forge state, merge queues or spend from a provider; collecting them is the
+    caller's job. Stalled-agent detection is limited to worktrees under `.worktrees/`.
+22. **Machine limits are guidance.** `parallel-agent-work` describes cgroup and build-job caps; the
+    kit enforces only `parallel.max_worktrees` per repository, not per machine.
+23. **1.2.0 tools are unexercised here.** The build-speed, quality-gate, reproducibility, isolation,
+    scale, observability and hardware entries are conditional or candidate. None has been run by this
+    repository's gate with a recorded evidence file or exercised at fleet scale by the kit. The
+    hardware-in-the-loop path is a candidate in full.
+24. **Autopilot tiers are unproven.** No repository has been promoted with the 1.2.0 checklist yet.
 
 ## Rollout findings (2026-10-29)
 

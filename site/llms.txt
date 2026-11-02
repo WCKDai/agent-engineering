@@ -1,13 +1,13 @@
 # CREED
 
-> CREED is WCKD's engineering guide for agents: values, ten task skills, one verification CLI and evidence, not assertion.
+> CREED is WCKD's engineering guide for agents: values, 17 task skills, one verification CLI and evidence, not assertion.
 
 Read first: https://creed.sh/creed.md
 
-Source: `cb02a58` · schema `52bf0a0de77c3871` · kit version `1.1.1`.
+Source: `793a066` · schema `31967ebab5b80f88` · kit version `1.2.0`.
 
 Homepage: https://creed.sh
-Repository: https://github.com/wckdboy/agent-engineering
+Repository: https://github.com/WCKDai/agent-engineering
 
 ## Start here
 1. Read `AGENTS.md` first. It is the repository's authoritative policy.
@@ -24,6 +24,8 @@ Repository: https://github.com/wckdboy/agent-engineering
 - `security` — `./.agents/bin/eng security --json`
 - `actions` — `./.agents/bin/eng audit-actions`
 - `evidence` — `./.agents/bin/eng evidence verify`
+- `nightly` — `./.agents/bin/eng verify --profile nightly`
+- `digest` — `./.agents/bin/eng digest <repo>...`
 - `worktree` — `./.agents/bin/eng worktree create <task> --owner <agent>`
 - `release` — `./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>`
 
@@ -68,6 +70,34 @@ Source: https://creed.sh/skills/failure-investigator/SKILL.md
 Validate release readiness before publishing or tagging. Use when preparing a version, artifact, app build, package or deployment; when checking provenance, signatures, compatibility, security findings, rollback and final evidence.
 Source: https://creed.sh/skills/release-verifier/SKILL.md
 
+### verification-tiers
+Choose and run the right verification profile — fast for the inner loop, full on merge, nightly for fuzzing, mutation, benchmarks and heavy suites — and record its scope. Use when deciding what to run for a change, configuring profiles, or reporting which checks a result covers.
+Source: https://creed.sh/skills/verification-tiers/SKILL.md
+
+### independent-verification
+Verify a change with a fresh agent that did not build it and tries to break it. Use before a required gate is reported as passed, when one agent built a change and another must certify it, or when a repository requires separation of builder and verifier.
+Source: https://creed.sh/skills/independent-verification/SKILL.md
+
+### parallel-agent-work
+Run many agents on many repositories at once without collisions. Use when several agents or sub-agents work concurrently, share a build machine, or open pull requests against the same target; covers isolation, ownership, machine limits, merge queues, stop conditions and handoff.
+Source: https://creed.sh/skills/parallel-agent-work/SKILL.md
+
+### build-performance
+Make builds and CI faster without lowering the gate. Use when compile, test or CI time is the bottleneck, when adding a compiler cache, faster linker or test runner, or when someone claims a build optimisation; every change needs before/after numbers.
+Source: https://creed.sh/skills/build-performance/SKILL.md
+
+### agent-sandboxing
+Run agents in isolated, least-privilege environments. Use when setting up where agents execute, giving an agent credentials or network access, running untrusted code or dependencies, sharing caches or artifacts between agents, or deciding who may approve releases and deploys.
+Source: https://creed.sh/skills/agent-sandboxing/SKILL.md
+
+### autopilot-readiness
+Decide whether a repository can run with less human attention, and promote it one tier at a time. Use when proposing that agents merge or run a repository unattended, when reviewing a repository's controls before reducing supervision, or when an unattended repository misbehaves.
+Source: https://creed.sh/skills/autopilot-readiness/SKILL.md
+
+### improvement-loop
+Improve the delivery system weekly from evidence — pick the single worst bottleneck, change one thing, measure, keep or revert. Use for the weekly engineering review, for proposing a process or tooling change, and for any change to Creed itself.
+Source: https://creed.sh/skills/improvement-loop/SKILL.md
+
 ## Tools and connectors
 - **ripgrep** (intelligence): Exact symbol and text search across tracked trees. `./.agents/bin/eng impact --base origin/main`
 - **git grep** (intelligence): Search tracked files without extra tooling. `git grep -n -w <symbol>`
@@ -90,7 +120,7 @@ Source: https://creed.sh/skills/release-verifier/SKILL.md
 - **CI artifacts** (observability): Retain evidence outside the agent's context. `actions/upload-artifact`
 - **Agent evaluation harness** (observability): Scored tasks in isolated worktrees. `./evals/agent/run.py --agent-cmd '<command>'`
 - **AGENTS.md** (context): The repository's authoritative policy and map. `read AGENTS.md first`
-- **Agent Skills** (context): Ten task-specific entrypoints with workflows and completion criteria. `read .agents/skills/<name>/SKILL.md`
+- **Agent Skills** (context): Seventeen task-specific entrypoints with workflows and completion criteria. `read .agents/skills/<name>/SKILL.md`
 - **ADRs and architecture docs** (context): Durable decisions linked to source and tests. `docs/adr/ or docs/architecture/`
 - **OpenCode** (connectors): Agent executor with skills, tools and sessions. `opencode`
 - **Codex CLI** (connectors): Agent executor and AGENTS.md reader. `codex`
@@ -124,6 +154,13 @@ Recorded observations, not live CI. See agents.json for dates and evidence links
 - Only the pilot and local review branches have been exercised; other repositories are not yet rolled out.
 - The agent evaluation harness is a smoke test with two tasks, not a statistical model benchmark.
 - Evidence is hash-chained locally but not signed; CI artifact retention is the external trust anchor.
+- Builder and verifier identities in evidence are declared by the caller, not authenticated.
+- Quarantine is declarative: the repository's test command must exclude the test; the kit reports it as unverified and blocks on expiry.
+- eng digest reads local evidence, quarantine files and worktrees; it does not fetch CI artifacts, forge state or provider spend.
+- The delivery metrics are defined in references/metrics.md; the kit records inputs but does not compute them.
+- Machine-level concurrency caps are guidance; the kit enforces only parallel.max_worktrees per repository.
+- The build-speed, quality-gate, reproducibility, isolation, scale, observability and hardware tools are conditional or candidate; none has been exercised in this repository with recorded evidence or at fleet scale.
+- No repository has been promoted with the autopilot-readiness checklist yet; the hardware-in-the-loop path is a candidate.
 - The kit does not generate SBOMs or signatures; release-check can record and verify supplied material.
 
 Machine-readable: `./agents.json` · `./data/site.json` · `./data/skills.json` · `./downloads/eng-kit.zip`

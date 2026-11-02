@@ -1,5 +1,5 @@
 {
-  "entries": 29,
+  "entries": 37,
   "file": "eng-kit.zip",
   "files": [
     "AGENTS.md",
@@ -18,10 +18,17 @@
     "lib/eng.py",
     "references/change-lifecycle.md",
     "references/evidence.md",
+    "references/metrics.md",
     "references/trust.md",
+    "skills/agent-sandboxing/SKILL.md",
+    "skills/autopilot-readiness/SKILL.md",
+    "skills/build-performance/SKILL.md",
     "skills/change-impact/SKILL.md",
     "skills/contract-guardian/SKILL.md",
     "skills/failure-investigator/SKILL.md",
+    "skills/improvement-loop/SKILL.md",
+    "skills/independent-verification/SKILL.md",
+    "skills/parallel-agent-work/SKILL.md",
     "skills/parallel-executor/SKILL.md",
     "skills/performance-engineer/SKILL.md",
     "skills/regression-guardian/SKILL.md",
@@ -29,8 +36,9 @@
     "skills/repo-intelligence/SKILL.md",
     "skills/safe-refactor/SKILL.md",
     "skills/security-auditor/SKILL.md",
+    "skills/verification-tiers/SKILL.md",
     "templates/AGENTS.md"
   ],
-  "sha256": "94edaadd0e6e822f129ebf0a9136454b87b38425b68903252c22a4e052dc3afa",
-  "size": 60909
+  "sha256": "32736e4d6123c61d4362462f70825ea3b9627f62940764a38ecfc2286d5713ad",
+  "size": 80263
 }

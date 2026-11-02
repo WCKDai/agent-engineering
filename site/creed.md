@@ -1,6 +1,6 @@
 # CREED — engineering for agents
 
-Canonical guide: https://creed.sh/creed.md
+Canonical guide: https://creed.sh/creed.md · version 1.2.0
 
 Read this before a nontrivial engineering task. Read AGENTS.md first: it is the
 repository's authoritative policy. Its commands and the user's authorized scope override
@@ -71,6 +71,30 @@ Every failure should leave a test, a rule or a documented reason.
 - A scanner rule lands with a positive and a negative fixture.
 - Knowledge lives in version-controlled docs, linked to source and tests.
 - Promote a harness or policy change only when the same task set improves.
+
+### Speed never lowers the evidence level
+Going faster is welcome; checking less is not. A faster gate must still check the same things.
+
+- A cache, runner or profile change keeps the same required checks.
+- A narrower scope is recorded as narrower, never reported as the full gate.
+- Moving a check from the merge gate to nightly is a policy change for the owner.
+- If a shortcut cannot keep the evidence level, it is rejected.
+
+### Attention is scarce: report by exception
+Humans read what needs them, not a stream of green. Exceptions are never hidden to keep the list short.
+
+- Send failures, blocked gates, expiring quarantines, overspend and stalled work; not every pass.
+- `eng digest` lists every blocked, skipped or unverified item in the latest record of each profile.
+- One named human owns exceptions for each repository.
+- An exception without an owner and a next step is not reported yet.
+
+### Measure before optimising, and keep the number
+A before and an after, recorded where the next person can read them.
+
+- Record the baseline before the change, under the same conditions as the after.
+- Keep the numbers with the change: in the pull request, the evidence or the weekly review.
+- One change at a time, so the movement can be attributed.
+- A number that was not kept cannot justify the next decision.
 
 ## Understand
 What behavior is being asked for, and what must not change?
@@ -151,6 +175,13 @@ Load only the skills the task needs. Stable names and original frontmatter are p
 - [contract-guardian](https://creed.sh/skills/contract-guardian/SKILL.md) — Protect public APIs, ABIs, schemas, serialization formats, protocols, CLI behavior and migration invariants. Use when a change alters an interface consumers depend on, when adding a schema migration, or when compatibility must be proven with fixtures.
 - [failure-investigator](https://creed.sh/skills/failure-investigator/SKILL.md) — Reproduce a failure, find its root cause, and leave a permanent regression check. Use for crashes, failing tests, flaky behavior, production incidents, build breaks and unexplained regressions; also use when a fix is proposed without a confirmed cause.
 - [release-verifier](https://creed.sh/skills/release-verifier/SKILL.md) — Validate release readiness before publishing or tagging. Use when preparing a version, artifact, app build, package or deployment; when checking provenance, signatures, compatibility, security findings, rollback and final evidence.
+- [verification-tiers](https://creed.sh/skills/verification-tiers/SKILL.md) — Choose and run the right verification profile — fast for the inner loop, full on merge, nightly for fuzzing, mutation, benchmarks and heavy suites — and record its scope. Use when deciding what to run for a change, configuring profiles, or reporting which checks a result covers.
+- [independent-verification](https://creed.sh/skills/independent-verification/SKILL.md) — Verify a change with a fresh agent that did not build it and tries to break it. Use before a required gate is reported as passed, when one agent built a change and another must certify it, or when a repository requires separation of builder and verifier.
+- [parallel-agent-work](https://creed.sh/skills/parallel-agent-work/SKILL.md) — Run many agents on many repositories at once without collisions. Use when several agents or sub-agents work concurrently, share a build machine, or open pull requests against the same target; covers isolation, ownership, machine limits, merge queues, stop conditions and handoff.
+- [build-performance](https://creed.sh/skills/build-performance/SKILL.md) — Make builds and CI faster without lowering the gate. Use when compile, test or CI time is the bottleneck, when adding a compiler cache, faster linker or test runner, or when someone claims a build optimisation; every change needs before/after numbers.
+- [agent-sandboxing](https://creed.sh/skills/agent-sandboxing/SKILL.md) — Run agents in isolated, least-privilege environments. Use when setting up where agents execute, giving an agent credentials or network access, running untrusted code or dependencies, sharing caches or artifacts between agents, or deciding who may approve releases and deploys.
+- [autopilot-readiness](https://creed.sh/skills/autopilot-readiness/SKILL.md) — Decide whether a repository can run with less human attention, and promote it one tier at a time. Use when proposing that agents merge or run a repository unattended, when reviewing a repository's controls before reducing supervision, or when an unattended repository misbehaves.
+- [improvement-loop](https://creed.sh/skills/improvement-loop/SKILL.md) — Improve the delivery system weekly from evidence — pick the single worst bottleneck, change one thing, measure, keep or revert. Use for the weekly engineering review, for proposing a process or tooling change, and for any change to Creed itself.
 
 ## Tools and verification
 
@@ -169,6 +200,8 @@ Use the repository's own checks when the kit is absent; do not report absent con
 - `security`: `./.agents/bin/eng security --json`
 - `actions`: `./.agents/bin/eng audit-actions`
 - `evidence`: `./.agents/bin/eng evidence verify`
+- `nightly`: `./.agents/bin/eng verify --profile nightly`
+- `digest`: `./.agents/bin/eng digest <repo>...`
 - `worktree`: `./.agents/bin/eng worktree create <task> --owner <agent>`
 - `release`: `./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>`
 

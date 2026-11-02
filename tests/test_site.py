@@ -8,6 +8,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -40,7 +41,7 @@ class SiteTests(unittest.TestCase):
     def test_generated_skills_are_complete(self):
         data = json.loads(DATA.read_text(encoding="utf-8"))
         self.assertEqual(data["schema"], "agent-engineering-site/v1")
-        self.assertEqual(len(data["skills"]), 10)
+        self.assertEqual(len(data["skills"]), 17)
         for skill in data["skills"]:
             self.assertTrue(skill["name"])
             self.assertTrue(skill["description"])
@@ -63,13 +64,14 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(agents["schema"], "agent-engineering/v1")
         self.assertIn("AGENTS.md", agents["start"]["read_first"])
         self.assertIn("eng verify --profile fast", agents["start"]["fast"])
-        self.assertEqual(len(agents["skills"]), 10)
+        self.assertEqual(len(agents["skills"]), 17)
         self.assertGreaterEqual(len(agents["tools"]), 20)
         self.assertTrue(agents["limits"])
         llms = (SITE / "llms.txt").read_text(encoding="utf-8")
         for skill in agents["skills"]:
             self.assertIn(f"### {skill['id']}", llms)
         self.assertIn("## Commands", llms)
+        self.assertIn(f"version {agents['version']}", (SITE / "creed.md").read_text(encoding="utf-8"))
         self.assertIn("## Limits", llms)
 
     def test_creed_canonical_and_agent_entrypoint(self):
@@ -91,6 +93,28 @@ class SiteTests(unittest.TestCase):
         html = (SITE / "index.html").read_text(encoding="utf-8")
         self.assertIn('rel="canonical" href="https://creed.sh/"', html)
         self.assertIn('href="./creed.md"', html)
+
+    def test_rebuilding_committed_outputs_changes_nothing(self):
+        """A clean checkout must stay clean after a rebuild, or every gate run reports a tree change."""
+        files = subprocess.run(["git", "-C", str(KIT), "ls-files", "-z"], capture_output=True, text=True, check=True)
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "kit"
+            for name in filter(None, files.stdout.split("\0")):
+                src = KIT / name
+                if src.is_file():
+                    dst = repo / name
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+            git = lambda *a: subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, check=True)
+            git("init", "-q")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "add", "-A")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-qm", "source")
+            build = lambda: subprocess.run([sys.executable, str(repo / "site" / "build.py")], capture_output=True, text=True, check=True)
+            build()
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "add", "-A")
+            git("-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-qm", "outputs", "--allow-empty")
+            build()
+            self.assertEqual(git("status", "--porcelain").stdout, "")
 
     def test_raw_agent_sources_match_authoritative_files(self):
         agents = json.loads((SITE / "agents.json").read_text(encoding="utf-8"))
@@ -135,8 +159,25 @@ class SiteTests(unittest.TestCase):
 
     def test_paths_and_repositories_are_usable(self):
         data = json.loads(DATA.read_text(encoding="utf-8"))
-        self.assertEqual(len(data["paths"]), 8)
+        self.assertEqual(len(data["paths"]), 12)
+        for tool in data["tools"]:
+            self.assertTrue(tool["summary"] and tool.get("failure_mode"), tool["id"])
+            self.assertIn(tool["status"], {"adopted", "conditional", "candidate"}, tool["id"])
+            if tool["category"] in {"build", "reproducibility", "isolation", "scale", "hardware"}:
+                self.assertNotEqual(tool["status"], "adopted", f"{tool['id']} has no evidence in this repository")
+            if tool["category"] in {"scale", "hardware"}:
+                self.assertEqual(tool["status"], "candidate", tool["id"])
+            docs = tool["docs"]
+            if not docs.startswith("https://"):
+                target = docs.removeprefix("./").split("#")[0]
+                self.assertTrue(target == "" or (SITE / target).exists(), f"{tool['id']}: {docs} is not in the site")
+            if "version" in tool:
+                self.assertRegex(tool["checked"], r"^\d{4}-\d{2}-\d{2}$")
+        skill_ids = {s["id"] for s in data["skills"]}
+        self.assertEqual(next(p for p in data["paths"] if p["id"] == "hardware-in-the-loop").get("status"), "candidate")
         for path in data["paths"]:
+            for step in path["steps"]:
+                self.assertLessEqual(set(step["skills"]), skill_ids, f"{path['id']}: {step['title']}")
             self.assertGreaterEqual(len(path["steps"]), 4, path["id"])
             for step in path["steps"]:
                 self.assertTrue(step["commands"], f"{path['id']}: {step['title']} has no command")
@@ -236,7 +277,7 @@ class SiteTests(unittest.TestCase):
             self.assertIn("eng-kit/lib/eng.py", names)
             self.assertIn("eng-kit/AGENTS.md", names)
             self.assertIn("eng-kit/MANIFEST.sha256", names)
-            self.assertEqual(sum(1 for n in names if n.endswith("/SKILL.md")), 10)
+            self.assertEqual(sum(1 for n in names if n.endswith("/SKILL.md")), 17)
             self.assertFalse(any("__pycache__" in n or n.endswith(".pyc") for n in names))
             self.assertFalse(any(".agents/evidence" in n for n in names))
             self.assertFalse(any(n.startswith("eng-kit/site/") for n in names))

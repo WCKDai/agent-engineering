@@ -21,14 +21,16 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 CONFIG_SCHEMA = "eng-config/v1"
 DETECT_SCHEMA = "eng-detect/v1"
 IMPACT_SCHEMA = "eng-impact/v1"
 EVIDENCE_SCHEMA = "eng-evidence/v1"
+QUARANTINE_SCHEMA = "eng-quarantine/v1"
+QUARANTINE_FILE = Path(".agents/quarantine.json")
 EVIDENCE_DIR = Path(".agents/evidence")
 WORKTREE_DIR = Path(".worktrees")
 
@@ -287,6 +289,7 @@ def load_config(root):
 def command_specs(config, profile):
     commands = config.get("commands", {}) if config else {}
     raw = commands.get(profile)
+    # full falls back to fast; nightly never falls back: an empty nightly profile is blocked.
     if not raw and profile == "full":
         raw = commands.get("fast")
     specs = []
@@ -1212,6 +1215,54 @@ def write_evidence(root, record, logdir):
     return path, body["sha256"]
 
 
+def check_evidence_chain(root):
+    """Return (records, failures). Records are evidence objects that passed every check, in index
+    order; anything malformed or tampered is a failure, never an exception."""
+    evdir = (Path(root) / EVIDENCE_DIR).resolve()
+    index = evdir / "index.jsonl"
+    try:
+        entries = [json.loads(l) for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
+    except json.JSONDecodeError as exc:
+        return [], [f"corrupt index: {exc}"]
+    prev = None
+    records, failures = [], []
+    for n, entry in enumerate(entries, 1):
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str) or not isinstance(entry.get("file"), str):
+            failures.append(f"line {n}: malformed index entry")
+            prev = None
+            continue
+        path = (Path(root) / entry["file"]).resolve()
+        if evdir not in path.parents:
+            failures.append(f"{entry['id']}: file is outside the evidence directory")
+            continue
+        if not path.exists():
+            failures.append(f"{entry['id']}: missing file")
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            failures.append(f"{entry['id']}: invalid JSON")
+            continue
+        if not isinstance(data, dict):
+            failures.append(f"{entry['id']}: record is not a JSON object")
+            continue
+        claimed = data.pop("sha256", None)
+        ok = True
+        if claimed != hash_obj(data):
+            failures.append(f"{entry['id']}: content hash mismatch")
+            ok = False
+        if entry.get("sha256") != claimed:
+            failures.append(f"{entry['id']}: index hash mismatch")
+            ok = False
+        if entry.get("prev_sha256") != prev:
+            failures.append(f"{entry['id']}: broken chain link")
+            ok = False
+        prev = claimed
+        if ok:
+            records.append(data)
+    return records, failures
+
+
 def cmd_evidence(args):
     root = Path(args.root)
     if args.action == "verify":
@@ -1219,32 +1270,11 @@ def cmd_evidence(args):
         if not index.exists():
             print("eng evidence: no evidence index")
             return 1
-        try:
-            entries = [json.loads(l) for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
-        except json.JSONDecodeError as exc:
-            print(f"eng evidence: FAILED — corrupt index: {exc}")
+        records, failures = check_evidence_chain(root)
+        if failures and failures[0].startswith("corrupt index"):
+            print(f"eng evidence: FAILED — {failures[0]}")
             return 1
-        prev = None
-        failures = []
-        for entry in entries:
-            path = root / entry["file"]
-            if not path.exists():
-                failures.append(f"{entry['id']}: missing file")
-                continue
-            try:
-                data = json.loads(path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                failures.append(f"{entry['id']}: invalid JSON")
-                continue
-            claimed = data.pop("sha256", None)
-            actual = hash_obj(data)
-            if claimed != actual:
-                failures.append(f"{entry['id']}: content hash mismatch")
-            if entry.get("sha256") != claimed:
-                failures.append(f"{entry['id']}: index hash mismatch")
-            if entry.get("prev_sha256") != prev:
-                failures.append(f"{entry['id']}: broken chain link")
-            prev = claimed
+        entries = [l for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
         if failures:
             print("eng evidence: FAILED")
             for f in failures:
@@ -1275,6 +1305,141 @@ def cmd_evidence(args):
     return 2
 
 
+# ----------------------------------------------------------------------------- digest
+
+
+DIGEST_SCHEMA = "eng-digest/v1"
+
+
+def parse_time(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def digest_repo(root, now, cost_cap=None, window_days=None, stale_hours=24, expiring_days=7):
+    """Exceptions only: anything a human must look at. Nothing blocked, skipped or unverified is dropped."""
+    root = Path(root)
+    name = root.name
+    items = []
+
+    def add(kind, detail):
+        items.append({"repo": name, "path": str(root), "kind": kind, "detail": detail})
+
+    if not root.is_dir():
+        add("unreadable", "not a directory")
+        return items
+    cfg = {}
+    try:
+        cfg = load_config(root)[0] or {}
+    except SystemExit as exc:
+        add("blocked", str(exc))
+    if not (root / EVIDENCE_DIR / "index.jsonl").exists():
+        add("no-evidence", "no evidence index: nothing here has been verified")
+        records = []
+    else:
+        records, failures = check_evidence_chain(root)
+        for failure in failures:
+            add("evidence-tampered", failure)
+    latest = {}
+    for record in records:
+        latest[record.get("profile", "?")] = record
+    for profile, record in sorted(latest.items()):
+        verdict = record.get("verdict") if isinstance(record.get("verdict"), dict) else {}
+        status = verdict.get("status")
+        where = f"{profile} {record.get('id')}"
+        if status in ("fail", "blocked"):
+            reasons = verdict.get("required_failures") or []
+            add(status, f"{where}: " + (", ".join(reasons) if reasons else "see record"))
+        for note in verdict.get("unverified") or []:
+            add("unverified", f"{where}: {note}")
+    active, problems = load_quarantine(root, now.date())
+    for problem in problems:
+        add("quarantine", problem)
+    for entry in active:
+        expires = datetime.strptime(entry["expires"], "%Y-%m-%d").date()
+        if (expires - now.date()).days <= expiring_days:
+            add("quarantine-expiring", f"{entry['test']} (owner {entry['owner']}) expires {entry['expires']}")
+    budget = cfg.get("budget") or {}
+    cap = cost_cap if cost_cap is not None else budget.get("cost_cap")
+    window = window_days or budget.get("window_days") or 7
+    if cap is not None:
+        try:
+            cap = float(cap)
+        except (TypeError, ValueError):
+            add("blocked", f"budget.cost_cap is not a number: {cap!r}")
+            cap = None
+    if cap is not None:
+        recent = [r for r in records if (parse_time(r.get("finished_at")) or now) >= now - timedelta(days=window)]
+        spent, unknown = {}, 0
+        for r in recent:
+            cost = r.get("cost")
+            try:
+                amount = float(cost["amount"]) if isinstance(cost, dict) else None
+            except (KeyError, TypeError, ValueError):
+                amount = None
+            if amount is None:
+                unknown += 1
+                continue
+            unit = str(cost.get("unit") or "?")
+            spent[unit] = spent.get(unit, 0.0) + amount
+        # Units are never added together; the cap applies to each unit's total.
+        for unit, total in sorted(spent.items()):
+            if total > cap:
+                add("over-spend", f"{total:g} {unit} recorded in {window} days, cap {cap:g} per unit")
+        if unknown:
+            add("spend-unknown", f"{unknown} run(s) in {window} days recorded no cost")
+    base = root / WORKTREE_DIR
+    if base.is_dir():
+        for wt in sorted(p for p in base.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            stamps = []
+            res = git(wt, "log", "-1", "--format=%cI")
+            if res.ok and res.out.strip():
+                stamps.append(parse_time(res.out.strip()))
+            index = wt / EVIDENCE_DIR / "index.jsonl"
+            if index.exists():
+                lines = [l for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
+                if lines:
+                    try:
+                        stamps.append(parse_time(json.loads(lines[-1]).get("at")))
+                    except json.JSONDecodeError:
+                        pass
+            meta = worktree_meta_path(root, wt.name)
+            owner = "?"
+            if meta.exists():
+                try:
+                    data = json.loads(meta.read_text(encoding="utf-8"))
+                    owner = data.get("owner", "?")
+                    stamps.append(parse_time(data.get("created_at")))
+                except json.JSONDecodeError:
+                    pass
+            stamps = [t for t in stamps if t]
+            last = max(stamps) if stamps else None
+            if last is None or now - last > timedelta(hours=stale_hours):
+                when = last.isoformat() if last else "never"
+                add("stalled", f"worktree {wt.name} (owner {owner}): no commit or evidence since {when}")
+    return items
+
+
+def cmd_digest(args):
+    now = datetime.now(timezone.utc)
+    roots = args.repos or [args.root]
+    items = []
+    for root in roots:
+        items.extend(digest_repo(root, now, args.cost_cap, args.window_days, args.stale_hours, args.expiring_days))
+    if args.json:
+        print(json.dumps({"schema": DIGEST_SCHEMA, "generated_at": now_iso(), "repositories": [str(r) for r in roots],
+                          "items": items}, indent=2, sort_keys=True))
+    elif not items:
+        print(f"eng digest: nothing needs you ({len(roots)} repositories)")
+    else:
+        print(f"eng digest: {len(items)} item(s) need you")
+        for item in items:
+            print(f"  {item['repo']:<24} {item['kind']:<20} {item['detail']}")
+    return 1 if items else 0
+
+
 # ----------------------------------------------------------------------------- verify
 
 
@@ -1302,6 +1467,79 @@ def run_command(root, spec, logdir, index):
     }
 
 
+def verify_scope(args):
+    if args.scope:
+        return args.scope
+    if args.changed:
+        return f"configured {args.profile} commands; impact against {args.base or 'HEAD'}"
+    return f"configured {args.profile} commands"
+
+
+def run_metadata(args):
+    """Agent run identity. Declared by the caller, not authenticated."""
+    meta = {
+        "id": args.run_id or os.environ.get("ENG_RUN_ID"),
+        "builder": args.builder or os.environ.get("ENG_BUILDER"),
+        "verifier": args.verifier or os.environ.get("ENG_VERIFIER"),
+    }
+    return {k: v for k, v in meta.items() if v}
+
+
+def load_quarantine(root, today=None):
+    """Declared flaky tests. Active entries are unverified; expired or malformed entries block."""
+    path = Path(root) / QUARANTINE_FILE
+    if not path.exists():
+        return [], []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], [f"quarantine file unreadable: {exc}"]
+    if not isinstance(data, dict) or data.get("schema") != QUARANTINE_SCHEMA or not isinstance(data.get("entries"), list):
+        return [], [f"quarantine file must be {QUARANTINE_SCHEMA} with an entries list"]
+    today = today or datetime.now(timezone.utc).date()
+    active, problems = [], []
+    for i, entry in enumerate(data["entries"]):
+        if not isinstance(entry, dict) or not all(isinstance(entry.get(k), str) and entry[k].strip()
+                                                  for k in ("test", "owner", "expires", "reason")):
+            problems.append(f"quarantine entry {i}: needs test, owner, expires and reason")
+            continue
+        try:
+            expires = datetime.strptime(entry["expires"], "%Y-%m-%d").date()
+        except ValueError:
+            problems.append(f"quarantine entry {i}: expires must be YYYY-MM-DD")
+            continue
+        if expires < today:
+            problems.append(f"quarantine expired: {entry['test']} (owner {entry['owner']}, expired {entry['expires']})")
+        else:
+            active.append(entry)
+    return active, problems
+
+
+def independence_problem(cfg, profile, run_meta):
+    """With verification.independent set, a full or nightly gate needs a verifier other than the builder."""
+    if not (cfg.get("verification") or {}).get("independent") or profile not in ("full", "nightly"):
+        return None
+    builder, verifier = run_meta.get("builder"), run_meta.get("verifier")
+    if not builder or not verifier:
+        return "independent verification required: record both --builder and --verifier"
+    if builder == verifier:
+        return f"independent verification required: {builder} cannot verify its own work"
+    return None
+
+
+def read_cache_stats(root, path):
+    if not path:
+        return None, None
+    target = Path(path) if Path(path).is_absolute() else Path(root) / path
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"cache statistics not recorded: {exc}"
+    if not isinstance(data, dict):
+        return None, "cache statistics not recorded: expected a JSON object"
+    return data, None
+
+
 def cmd_verify(args):
     root = Path(args.root)
     try:
@@ -1317,6 +1555,7 @@ def cmd_verify(args):
     logdir = edir / eid
     logdir.mkdir(parents=True, exist_ok=True)
     started = now_iso()
+    started_clock = time.monotonic()
     required_failures, unverified = [], []
     commands, security, impact = [], [], None
     blocked = False
@@ -1333,7 +1572,7 @@ def cmd_verify(args):
         print(f"  {mark:<8} {item['name']:<20} {item['duration_s']:>7.2f}s  exit={item['exit_code']}")
         if item["status"] != "pass" and item["required"]:
             required_failures.append(f"command:{item['name']}")
-    if args.profile == "full" and not args.skip_security:
+    if args.profile in ("full", "nightly") and not args.skip_security:
         required, optional = security_plan(cfg)
         for name in required + optional:
             res = run_scanner(root, cfg, name, logdir)
@@ -1366,6 +1605,20 @@ def cmd_verify(args):
     final_snapshot = git_snapshot(root)
     if snapshot.get("present") and final_snapshot.get("diff_sha256") != snapshot.get("diff_sha256"):
         unverified.append("working tree changed during verification; commands may have modified files")
+    quarantined, quarantine_problems = load_quarantine(root)
+    for entry in quarantined:
+        unverified.append(f"quarantined test not verified: {entry['test']} (owner {entry['owner']}, expires {entry['expires']})")
+    if quarantine_problems:
+        blocked = True
+        unverified.extend(quarantine_problems)
+    run_meta = run_metadata(args)
+    independence = independence_problem(cfg, args.profile, run_meta)
+    if independence:
+        blocked = True
+        unverified.append(independence)
+    cache, cache_note = read_cache_stats(root, args.cache_stats)
+    if cache_note:
+        unverified.append(cache_note)
     status = "fail" if required_failures else ("blocked" if blocked else "pass")
     code = {"pass": 0, "fail": 1, "blocked": 2}[status]
     finished = now_iso()
@@ -1376,6 +1629,8 @@ def cmd_verify(args):
         "started_at": started,
         "finished_at": finished,
         "profile": args.profile,
+        "scope": verify_scope(args),
+        "duration_s": round(time.monotonic() - started_clock, 2),
         "command": " ".join(sys.argv),
         "git": final_snapshot,
         "git_before": snapshot,
@@ -1396,6 +1651,13 @@ def cmd_verify(args):
             "unverified": list(dict.fromkeys(unverified)),
         },
     }
+    # Optional eng-evidence/v1 fields: present only when supplied, so older records stay valid.
+    if run_meta:
+        record["run"] = run_meta
+    if args.cost is not None:
+        record["cost"] = {"amount": args.cost, "unit": args.cost_unit}
+    if cache is not None:
+        record["cache"] = cache
     path, digest = write_evidence(root, record, logdir)
     print(f"eng verify: {status.upper()} (exit {code})")
     if unverified:
@@ -1964,7 +2226,14 @@ def main(argv=None):
     p.set_defaults(func=cmd_init)
 
     p = sub.add_parser("verify", help="run configured checks and write evidence")
-    p.add_argument("--profile", choices=["fast", "full"], default="fast")
+    p.add_argument("--profile", choices=["fast", "full", "nightly"], default="fast")
+    p.add_argument("--scope", default=None, help="what this run covers (recorded; default: the configured commands)")
+    p.add_argument("--run-id", default=None, help="agent run id (or ENG_RUN_ID)")
+    p.add_argument("--builder", default=None, help="identity that built the change (or ENG_BUILDER)")
+    p.add_argument("--verifier", default=None, help="identity running this verification (or ENG_VERIFIER)")
+    p.add_argument("--cost", type=float, default=None, help="cost of the run, recorded as given")
+    p.add_argument("--cost-unit", default="USD")
+    p.add_argument("--cache-stats", default=None, help="JSON file of compiler-cache statistics to record")
     p.add_argument("--changed", action="store_true", help="include change-impact analysis")
     p.add_argument("--base", default=None, help="base revision for impact")
     p.add_argument("--skip-security", action="store_true")
@@ -2029,6 +2298,14 @@ def main(argv=None):
     p.add_argument("--allow-dirty", action="store_true")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_worktree)
+
+    p = sub.add_parser("digest", help="exception-only report across repositories")
+    p.add_argument("repos", nargs="*", help="repository roots (default: --root)")
+    p.add_argument("--cost-cap", type=float, default=None, help="spend cap per window (overrides budget.cost_cap)")
+    p.add_argument("--window-days", type=int, default=None, help="spend window (default budget.window_days or 7)")
+    p.add_argument("--stale-hours", type=float, default=24)
+    p.add_argument("--expiring-days", type=int, default=7)
+    p.set_defaults(func=cmd_digest)
 
     p = sub.add_parser("doctor", help="show tool and repository readiness")
     p.set_defaults(func=cmd_doctor)
