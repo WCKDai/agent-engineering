@@ -1216,34 +1216,50 @@ def write_evidence(root, record, logdir):
 
 
 def check_evidence_chain(root):
-    """Return (records, failures); records are the parsed evidence files in index order."""
-    index = Path(root) / EVIDENCE_DIR / "index.jsonl"
+    """Return (records, failures). Records are evidence objects that passed every check, in index
+    order; anything malformed or tampered is a failure, never an exception."""
+    evdir = (Path(root) / EVIDENCE_DIR).resolve()
+    index = evdir / "index.jsonl"
     try:
         entries = [json.loads(l) for l in index.read_text(encoding="utf-8").splitlines() if l.strip()]
     except json.JSONDecodeError as exc:
         return [], [f"corrupt index: {exc}"]
     prev = None
     records, failures = [], []
-    for entry in entries:
-        path = Path(root) / entry["file"]
+    for n, entry in enumerate(entries, 1):
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str) or not isinstance(entry.get("file"), str):
+            failures.append(f"line {n}: malformed index entry")
+            prev = None
+            continue
+        path = (Path(root) / entry["file"]).resolve()
+        if evdir not in path.parents:
+            failures.append(f"{entry['id']}: file is outside the evidence directory")
+            continue
         if not path.exists():
             failures.append(f"{entry['id']}: missing file")
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+        except (OSError, json.JSONDecodeError):
             failures.append(f"{entry['id']}: invalid JSON")
             continue
+        if not isinstance(data, dict):
+            failures.append(f"{entry['id']}: record is not a JSON object")
+            continue
         claimed = data.pop("sha256", None)
-        actual = hash_obj(data)
-        if claimed != actual:
+        ok = True
+        if claimed != hash_obj(data):
             failures.append(f"{entry['id']}: content hash mismatch")
+            ok = False
         if entry.get("sha256") != claimed:
             failures.append(f"{entry['id']}: index hash mismatch")
+            ok = False
         if entry.get("prev_sha256") != prev:
             failures.append(f"{entry['id']}: broken chain link")
+            ok = False
         prev = claimed
-        records.append(data)
+        if ok:
+            records.append(data)
     return records, failures
 
 
@@ -1330,13 +1346,13 @@ def digest_repo(root, now, cost_cap=None, window_days=None, stale_hours=24, expi
     for record in records:
         latest[record.get("profile", "?")] = record
     for profile, record in sorted(latest.items()):
-        verdict = record.get("verdict", {})
+        verdict = record.get("verdict") if isinstance(record.get("verdict"), dict) else {}
         status = verdict.get("status")
         where = f"{profile} {record.get('id')}"
         if status in ("fail", "blocked"):
             reasons = verdict.get("required_failures") or []
             add(status, f"{where}: " + (", ".join(reasons) if reasons else "see record"))
-        for note in verdict.get("unverified", []):
+        for note in verdict.get("unverified") or []:
             add("unverified", f"{where}: {note}")
     active, problems = load_quarantine(root, now.date())
     for problem in problems:
@@ -1349,11 +1365,29 @@ def digest_repo(root, now, cost_cap=None, window_days=None, stale_hours=24, expi
     cap = cost_cap if cost_cap is not None else budget.get("cost_cap")
     window = window_days or budget.get("window_days") or 7
     if cap is not None:
+        try:
+            cap = float(cap)
+        except (TypeError, ValueError):
+            add("blocked", f"budget.cost_cap is not a number: {cap!r}")
+            cap = None
+    if cap is not None:
         recent = [r for r in records if (parse_time(r.get("finished_at")) or now) >= now - timedelta(days=window)]
-        spent = sum(float(r["cost"]["amount"]) for r in recent if isinstance(r.get("cost"), dict))
-        unknown = sum(1 for r in recent if not isinstance(r.get("cost"), dict))
-        if spent > float(cap):
-            add("over-spend", f"{spent:g} recorded in {window} days, cap {cap:g}")
+        spent, unknown = {}, 0
+        for r in recent:
+            cost = r.get("cost")
+            try:
+                amount = float(cost["amount"]) if isinstance(cost, dict) else None
+            except (KeyError, TypeError, ValueError):
+                amount = None
+            if amount is None:
+                unknown += 1
+                continue
+            unit = str(cost.get("unit") or "?")
+            spent[unit] = spent.get(unit, 0.0) + amount
+        # Units are never added together; the cap applies to each unit's total.
+        for unit, total in sorted(spent.items()):
+            if total > cap:
+                add("over-spend", f"{total:g} {unit} recorded in {window} days, cap {cap:g} per unit")
         if unknown:
             add("spend-unknown", f"{unknown} run(s) in {window} days recorded no cost")
     base = root / WORKTREE_DIR

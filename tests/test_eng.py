@@ -438,6 +438,57 @@ class DigestTests(EngTestCase):
         code, items = self.digest("--cost-cap", "100")
         self.assertNotIn("over-spend", self.kinds(items))
 
+    def test_malformed_records_are_reported_not_crashed_on(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        eng(self.tmp, "verify")
+        records = sorted((self.tmp / ".agents" / "evidence").glob("*.json"))
+        records[0].write_text("[]")
+        data = json.loads(records[1].read_text())
+        data["verdict"] = "pass"
+        records[1].write_text(json.dumps(data))
+        index = self.tmp / ".agents" / "evidence" / "index.jsonl"
+        index.write_text(index.read_text() + '"not an object"\n{"id": "x"}\n')
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1, res.stdout + res.stderr)
+        self.assertNotIn("Traceback", res.stderr)
+        self.assertIn("not a JSON object", res.stdout)
+        self.assertIn("malformed index entry", res.stdout)
+        code, items = self.digest()
+        self.assertEqual(code, 1)
+        self.assertIn("evidence-tampered", self.kinds(items))
+
+    def test_index_entry_outside_the_repository_is_refused(self):
+        self.init_basic()
+        eng(self.tmp, "verify")
+        index = self.tmp / ".agents" / "evidence" / "index.jsonl"
+        index.write_text(index.read_text() + json.dumps({"id": "y", "file": "../../outside.json", "sha256": "0"}) + "\n")
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("outside the evidence directory", res.stdout)
+
+    def test_spend_is_capped_per_unit(self):
+        self.init_basic()
+        eng(self.tmp, "verify", "--cost", "6")
+        eng(self.tmp, "verify", "--cost", "5", "--cost-unit", "EUR")
+        code, items = self.digest("--cost-cap", "10")
+        self.assertNotIn("over-spend", self.kinds(items))
+        eng(self.tmp, "verify", "--cost", "6", "--cost-unit", "EUR")
+        code, items = self.digest("--cost-cap", "10")
+        over = [i["detail"] for i in items if i["kind"] == "over-spend"]
+        self.assertEqual(len(over), 1)
+        self.assertIn("EUR", over[0])
+
+    def test_string_cost_cap_in_config(self):
+        self.init_basic()
+        cfg = json.loads((self.tmp / ".agents" / "engineering.json").read_text())
+        cfg["budget"] = {"cost_cap": "1"}
+        self.repo.write(".agents/engineering.json", json.dumps(cfg))
+        eng(self.tmp, "verify", "--cost", "2")
+        res = eng(self.tmp, "digest", "--json")
+        self.assertNotIn("Traceback", res.stderr)
+        self.assertIn("over-spend", res.stdout)
+
     def test_stalled_worktree_is_reported(self):
         self.init_basic()
         eng(self.tmp, "verify")
