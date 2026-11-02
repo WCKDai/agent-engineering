@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — 2026-11-02
+
+Skills generalized from how OpenCode, t3code, Sentry, Twenty and Temporal build software.
+
+- Skills: safe-migrations, compatibility-and-deprecation, progressive-delivery, test-design,
+  diff-hygiene, pull-request-craft, behavior-review and agent-guidance, each with pinned sources.
+- verification-tiers: change-scoped test selection fails open; files with global effect always
+  trigger the full suite.
+- `references/inspiration.md` credits the five projects and the revisions read.
+- No CLI, schema or evidence change.
+
 ## 1.2.0 — 2026-11-02
 
 Running many agents on many repositories, fast, at the same evidence standard.
