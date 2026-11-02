@@ -8,6 +8,8 @@ Skills generalized from how OpenCode, t3code, Sentry, Twenty and Temporal build 
   diff-hygiene, pull-request-craft, behavior-review and agent-guidance, each with pinned sources.
 - verification-tiers: change-scoped test selection fails open; files with global effect always
   trigger the full suite.
+- contract-guardian: one set of change classes; migration rollback follows safe-migrations;
+  deploy order and deprecation timelines move to compatibility-and-deprecation.
 - `references/inspiration.md` credits the five projects and the revisions read.
 - No CLI, schema or evidence change.
 
