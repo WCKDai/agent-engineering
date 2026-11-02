@@ -27,7 +27,7 @@ file would have written.
 ## Outputs
 
 - A diff limited to the task, matching local idiom, with generated files regenerated, not edited.
-- Touched files left lint-clean, and no new or broader suppression.
+- No new lint or type findings in touched files, and no new or broader suppression.
 - A note of any repository-owned baseline (suppression count, coverage floor) that moved, and in
   which direction.
 
@@ -55,15 +55,17 @@ the task is to change them. Do not mix formatting or refactoring into a behavior
    (`<generate> && git diff --exit-code`). Commit source and output together.
 4. Paired files move together: a manifest change with its lockfile, an example config with its
    schema or docs. A lone half is a defect.
-5. Lint the files you touched, not only your lines: a change that touches a file leaves the whole
-   file clean, where the repository's tooling supports it.
+5. Lint the files you touched and add no new findings. Fix pre-existing findings in a separate
+   commit or PR, not inside the behavior change. Where the repository's CI requires every touched
+   file to be clean (OpenCode does this for its GUI packages), make that cleanup a separate commit
+   in the same PR.
 6. Re-run the checks without caches before claiming a fix (clear the task cache, rebuild the
    shared package, run the type checker directly). A cached pass is not evidence for this tree.
 
 ## Verification
 
 - `git diff --stat` lists only files the task needs; each is explainable in one sentence.
-- The generate command leaves no diff; lint and type checks pass on the touched files, uncached.
+- The generate command leaves no diff; lint and type checks report no new findings in the touched files, uncached.
 - No new suppression, `any`-style escape, raised baseline or edited generated file appears in the
   diff (`rg` for the repository's suppression syntax in the added lines).
 
@@ -79,11 +81,11 @@ the task is to change them. Do not mix formatting or refactoring into a behavior
 ## Done when
 
 The diff contains only what the task needs, in local idiom, with generated files regenerated,
-paired files together, touched files clean, no new suppressions, and checks re-run uncached.
+paired files together, no new findings or suppressions, and checks re-run uncached.
 
 ## Sources
 
-- OpenCode, anti-slop style rules, the `/rmslop` self-review command and "leave touched files clean":
+- OpenCode, anti-slop style rules, the `/rmslop` self-review command and CI that keeps touched GUI files clean:
   https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/AGENTS.md,
   https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/.opencode/command/rmslop.md,
   https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/script/lint-changed.ts
