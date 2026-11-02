@@ -15,7 +15,7 @@ not a proof of correctness or security.
 | Control evaluation | 9/9 evaluated checks pass (known-bad fails; fixed passes; planted secret/SAST found; clean passes) |
 | Agent harness, deterministic stub | 2/2 tasks pass, 0.93 s |
 | Agent harness, no-op agent | 0/2 tasks pass (scoring rejects a non-change) |
-| Skills | 10, each with frontmatter and required sections |
+| Skills | 17, each with frontmatter and required sections |
 
 ## Release status (2026-10-30)
 

@@ -12,7 +12,7 @@ not run a background service, require a database, or call a model.
 .agents/
   bin/eng                 entry point
   lib/eng.py              one dependency-free CLI
-  skills/                 ten task skills (SKILL.md)
+  skills/                 seventeen task skills (SKILL.md)
   references/             lifecycle, evidence and trust policy
   config/                 semgrep, gitleaks and guard allowlist
   hooks/                  pre-commit and pre-push
@@ -71,6 +71,13 @@ the generic workflow. Do not duplicate the same rule in three places.
 | `contract-guardian` | APIs, schemas, formats, migrations. |
 | `failure-investigator` | Reproduce, root-cause, permanent guard. |
 | `release-verifier` | Artifact-bound release evidence and rollback. |
+| `verification-tiers` | fast / full / nightly profiles and their recorded scope. |
+| `independent-verification` | A verifier other than the builder certifies the gate. |
+| `parallel-agent-work` | Many agents on many repositories: ownership, machine limits, merge queue, handoff. |
+| `build-performance` | Faster builds and CI with before/after numbers and an unchanged gate. |
+| `agent-sandboxing` | Isolated execution, scoped short-lived credentials, egress allowlist. |
+| `autopilot-readiness` | Attended → supervised autopilot → autopilot, one repository at a time. |
+| `improvement-loop` | Weekly: worst bottleneck, one change, measured, kept or reverted. |
 
 Skills activate from their frontmatter description. They are task-specific; repository rules stay in
 `AGENTS.md`.

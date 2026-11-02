@@ -43,6 +43,13 @@ SKILL_META = {
     "contract-guardian": {"phase": "verify", "risk": "high", "tags": ["api", "schema", "migration", "compatibility"], "order": 8},
     "failure-investigator": {"phase": "understand", "risk": "medium", "tags": ["incident", "root-cause", "reproduction"], "order": 9},
     "release-verifier": {"phase": "report", "risk": "high", "tags": ["release", "artifact", "provenance", "rollback"], "order": 10},
+    "verification-tiers": {"phase": "verify", "risk": "medium", "tags": ["profiles", "scope", "nightly"], "order": 11},
+    "independent-verification": {"phase": "verify", "risk": "high", "tags": ["review", "separation", "gate"], "order": 12},
+    "parallel-agent-work": {"phase": "plan", "risk": "high", "tags": ["fleet", "worktrees", "merge-queue", "limits"], "order": 13},
+    "build-performance": {"phase": "baseline", "risk": "medium", "tags": ["ci", "cache", "rust", "build-time"], "order": 14},
+    "agent-sandboxing": {"phase": "plan", "risk": "high", "tags": ["isolation", "credentials", "egress"], "order": 15},
+    "autopilot-readiness": {"phase": "report", "risk": "high", "tags": ["autonomy", "tiers", "checklist"], "order": 16},
+    "improvement-loop": {"phase": "report", "risk": "low", "tags": ["metrics", "weekly", "bottleneck"], "order": 17},
 }
 
 
@@ -354,8 +361,8 @@ def main():
     validate_repo_provenance(repos)
 
     skills = sorted((parse_skill(p) for p in (ROOT / "skills").glob("*/SKILL.md")), key=lambda s: s["order"])
-    if len(skills) != 10:
-        raise SystemExit(f"expected 10 skills, found {len(skills)}")
+    if len(skills) != len(SKILL_META) or any(s["id"] not in SKILL_META for s in skills):
+        raise SystemExit(f"expected the {len(SKILL_META)} skills in SKILL_META, found {sorted(s['id'] for s in skills)}")
 
     commit = run_git("rev-parse", "--short", "HEAD") or "uncommitted"
     commit_date = run_git("log", "-1", "--format=%cI") or datetime.now(timezone.utc).isoformat()
@@ -458,7 +465,7 @@ def main():
     llms = [
         "# CREED",
         "",
-        "> CREED is WCKD's engineering guide for agents: values, ten task skills, one verification CLI and evidence, not assertion.",
+        f"> CREED is WCKD's engineering guide for agents: values, {len(skills)} task skills, one verification CLI and evidence, not assertion.",
         "",
         f"Read first: {HOMEPAGE}/creed.md",
         "",

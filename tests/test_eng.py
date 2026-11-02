@@ -679,7 +679,7 @@ class InitTests(EngTestCase):
 class SkillTests(unittest.TestCase):
     def test_skills_have_frontmatter_and_required_sections(self):
         skills = sorted((KIT / "skills").glob("*/SKILL.md"))
-        self.assertEqual(len(skills), 10)
+        self.assertEqual(len(skills), 17)
         for path in skills:
             text = path.read_text(encoding="utf-8")
             self.assertTrue(text.startswith("---\n"), path)
