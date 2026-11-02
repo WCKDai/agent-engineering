@@ -4,7 +4,7 @@
 
 A working, self-contained control layer that a coding agent can discover and run in any repository:
 
-- seventeen task skills in the Agent Skills `SKILL.md` format;
+- twenty-five task skills in the Agent Skills `SKILL.md` format;
 - one dependency-free CLI (`detect`, `impact`, `verify`, `security`, `guard`, `worktree`, `evidence`);
 - hash-chained verification records that distinguish pass, fail, blocked and skipped;
 - real security integrations (gitleaks, Semgrep, OSV-Scanner, actionlint, zizmor);
