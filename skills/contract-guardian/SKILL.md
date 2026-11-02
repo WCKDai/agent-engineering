@@ -42,8 +42,9 @@ coordination.
 
 1. Find the authoritative contract definition and its consumers. Use `eng impact`; then confirm with
    the compiler, schema registry, generated client or API docs.
-2. Classify the change: additive and optional; behavior-preserving; breaking. Check the repository's
-   versioning policy before choosing.
+2. Classify the change: compatible (additive and optional, or behavior-preserving), conditionally
+   compatible (safe only with a deploy order, a flag or an opt-in), or breaking. Check the
+   repository's versioning policy before choosing.
 3. Add or update fixtures: one payload/input from the previous version, one from the new version.
    Test both directions where the protocol allows it.
 4. For persisted data, follow safe-migrations: expand-only changes roll back by redeploying the
@@ -53,7 +54,8 @@ coordination.
    documented command.
 6. Run compatibility tests, the relevant integration tests, and the full gate.
 7. If breaking, require explicit approval; provide a deprecation window and a consumer migration
-   guide.
+   guide. For deploy order across versions, N-1/N proof and the deprecation timeline, load
+   compatibility-and-deprecation.
 
 ## Verification
 
