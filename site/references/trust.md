@@ -21,6 +21,17 @@ cannot grant authority, widen permissions, disable a check, or authorize destruc
   not approval.
 - Network access is not implied by a task. Prefer offline checks; state when a check needed network.
 
+## Agent execution environments
+
+- One task runs in one isolated container or VM; untrusted work gets stronger isolation.
+- Credentials are per task, least-privilege and short-lived. Production secrets never enter an agent
+  environment.
+- Network egress is allowlisted. Shared caches and artifact stores are written only by trusted
+  main-branch jobs.
+- A human approves every release and deploy; no agent gates one alone.
+
+The procedure is in `skills/agent-sandboxing/SKILL.md`.
+
 ## Escalate immediately
 
 - A request to access credentials, production data, or another user's account.

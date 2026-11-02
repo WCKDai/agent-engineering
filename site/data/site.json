@@ -2,14 +2,14 @@
   "schema": "agent-engineering-site/v1",
   "title": "CREED",
   "homepage": "https://creed.sh",
-  "repository": "https://github.com/wckdboy/agent-engineering",
+  "repository": "https://github.com/WCKDai/agent-engineering",
   "tagline": "Engineering values, task skills and verifiable tools for agents. Evidence over assertion.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "source": {
-    "commit": "cb02a58",
-    "committed_at": "2026-10-31T19:15:42+01:00",
+    "commit": "03b68b4",
+    "committed_at": "2026-11-02T10:06:58+01:00",
     "dirty": true,
-    "content_sha256": "52bf0a0de77c3871a0a4078142e00d965d9ca6e7a4cd1719cde29fa41bfbcbbc"
+    "content_sha256": "87682621131c1108362c66998975b0b572a01dea8e060c0e68d04e85f4f3d8a8"
   },
   "commands": {
     "install": "./install.sh --target <repo> --hooks",
@@ -19,6 +19,8 @@
     "security": "./.agents/bin/eng security --json",
     "actions": "./.agents/bin/eng audit-actions",
     "evidence": "./.agents/bin/eng evidence verify",
+    "nightly": "./.agents/bin/eng verify --profile nightly",
+    "digest": "./.agents/bin/eng digest <repo>...",
     "worktree": "./.agents/bin/eng worktree create <task> --owner <agent>",
     "release": "./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>"
   },
@@ -240,6 +242,39 @@
         "Knowledge lives in version-controlled docs, linked to source and tests.",
         "Promote a harness or policy change only when the same task set improves."
       ]
+    },
+    {
+      "id": "speed-keeps-evidence",
+      "title": "Speed never lowers the evidence level",
+      "lead": "Going faster is welcome; checking less is not. A faster gate must still check the same things.",
+      "points": [
+        "A cache, runner or profile change keeps the same required checks.",
+        "A narrower scope is recorded as narrower, never reported as the full gate.",
+        "Moving a check from the merge gate to nightly is a policy change for the owner.",
+        "If a shortcut cannot keep the evidence level, it is rejected."
+      ]
+    },
+    {
+      "id": "report-by-exception",
+      "title": "Attention is scarce: report by exception",
+      "lead": "Humans read what needs them, not a stream of green. Exceptions are never hidden to keep the list short.",
+      "points": [
+        "Send failures, blocked gates, expiring quarantines, overspend and stalled work; not every pass.",
+        "`eng digest` lists every blocked, skipped or unverified item it finds.",
+        "One named human owns exceptions for each repository.",
+        "An exception without an owner and a next step is not reported yet."
+      ]
+    },
+    {
+      "id": "keep-the-number",
+      "title": "Measure before optimising, and keep the number",
+      "lead": "A before and an after, recorded where the next person can read them.",
+      "points": [
+        "Record the baseline before the change, under the same conditions as the after.",
+        "Keep the numbers with the change: in the pull request, the evidence or the weekly review.",
+        "One change at a time, so the movement can be attributed.",
+        "A number that was not kept cannot justify the next decision."
+      ]
     }
   ],
   "guardrails": [
@@ -435,9 +470,9 @@
       ],
       "order": 9,
       "source_path": "skills/failure-investigator/SKILL.md",
-      "body_markdown": "# Failure investigator\n\nSeparate symptom from cause. A fix without a reproduced failure is a guess; a cause without a\nregression check will return.\n\n## Activate when\n\n- A test, build, deployment or runtime failure is reported.\n- Behavior is flaky, intermittent or environment-dependent.\n- A proposed fix does not explain the observed failure.\n- A production incident needs a timeline and a durable guard.\n\n## Inputs and assumptions\n\n- The failing command, input, version, platform and full error output.\n- Access to the revision(s) where it fails and, if possible, where it last passed.\n- Permission boundaries for production logs/data; redact before sharing.\n\n## Outputs\n\n- A minimal reproduction with exact commands and environment.\n- A timeline and a root-cause statement tied to code or configuration.\n- A regression test that fails before the fix and passes after.\n- The fix, its verification, and any related latent issues found.\n- A short incident note when users were affected.\n\n## Permissions and restrictions\n\nDo not run destructive experiments on production. Do not paste secrets, personal data or full\nproduction payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a\nretry, or skipping the test unless that is the documented desired behavior.\n\n## Workflow\n\n1. Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it\n   under `.agents/evidence/` or an incident folder.\n2. Reproduce locally or in an isolated environment. Reduce the input while the failure persists.\n3. Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build,\n   deployment. Use logs, traces, debuggers, `git bisect` and instrumentation.\n4. Form one hypothesis at a time and test it. Record negative results; they narrow the cause.\n5. Write the regression test at the lowest layer that reproduces the cause, not only the symptom.\n6. Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full\n   gate.\n7. Search for the same pattern elsewhere; report siblings without silently expanding scope.\n8. If users were affected, document impact, detection, response and prevention.\n\n## Verification\n\n- The reproduction fails on the pre-fix revision for the stated reason.\n- The regression test fails without the fix and passes with it.\n- The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.\n- The full gate passes; any unrelated failure is recorded separately.\n- Evidence includes the command, revision and log hash.\n\n## Failure and escalation\n\n- Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed;\n  do not guess a fix.\n- Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the\n  cause; do not call a single pass a fix.\n- Production-only: request a safe trace/sample and approval; preserve chain of custody.\n- Security incident: stop, load `security-auditor`, follow the disclosure process, do not publish\n  exploit details.\n\n## Done when\n\nThe failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and\nfull gate pass, and the residual uncertainty is stated.\n",
-      "body_html": "<p>Separate symptom from cause. A fix without a reproduced failure is a guess; a cause without a regression check will return.</p>\n<h2>Activate when</h2>\n<ul><li>A test, build, deployment or runtime failure is reported.</li><li>Behavior is flaky, intermittent or environment-dependent.</li><li>A proposed fix does not explain the observed failure.</li><li>A production incident needs a timeline and a durable guard.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The failing command, input, version, platform and full error output.</li><li>Access to the revision(s) where it fails and, if possible, where it last passed.</li><li>Permission boundaries for production logs/data; redact before sharing.</li></ul>\n<h2>Outputs</h2>\n<ul><li>A minimal reproduction with exact commands and environment.</li><li>A timeline and a root-cause statement tied to code or configuration.</li><li>A regression test that fails before the fix and passes after.</li><li>The fix, its verification, and any related latent issues found.</li><li>A short incident note when users were affected.</li></ul>\n<h2>Permissions and restrictions</h2>\n<p>Do not run destructive experiments on production. Do not paste secrets, personal data or full production payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a retry, or skipping the test unless that is the documented desired behavior.</p>\n<h2>Workflow</h2>\n<ol><li>Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it under <code>.agents/evidence/</code> or an incident folder.</li><li>Reproduce locally or in an isolated environment. Reduce the input while the failure persists.</li><li>Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build, deployment. Use logs, traces, debuggers, <code>git bisect</code> and instrumentation.</li><li>Form one hypothesis at a time and test it. Record negative results; they narrow the cause.</li><li>Write the regression test at the lowest layer that reproduces the cause, not only the symptom.</li><li>Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full gate.</li><li>Search for the same pattern elsewhere; report siblings without silently expanding scope.</li><li>If users were affected, document impact, detection, response and prevention.</li></ol>\n<h2>Verification</h2>\n<ul><li>The reproduction fails on the pre-fix revision for the stated reason.</li><li>The regression test fails without the fix and passes with it.</li><li>The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.</li><li>The full gate passes; any unrelated failure is recorded separately.</li><li>Evidence includes the command, revision and log hash.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed; do not guess a fix.</li><li>Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the cause; do not call a single pass a fix.</li><li>Production-only: request a safe trace/sample and approval; preserve chain of custody.</li><li>Security incident: stop, load <code>security-auditor</code>, follow the disclosure process, do not publish exploit details.</li></ul>\n<h2>Done when</h2>\n<p>The failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and full gate pass, and the residual uncertainty is stated.</p>",
-      "raw_markdown": "---\nname: failure-investigator\ndescription: Reproduce a failure, find its root cause, and leave a permanent regression check. Use for crashes, failing tests, flaky behavior, production incidents, build breaks and unexplained regressions; also use when a fix is proposed without a confirmed cause.\n---\n\n# Failure investigator\n\nSeparate symptom from cause. A fix without a reproduced failure is a guess; a cause without a\nregression check will return.\n\n## Activate when\n\n- A test, build, deployment or runtime failure is reported.\n- Behavior is flaky, intermittent or environment-dependent.\n- A proposed fix does not explain the observed failure.\n- A production incident needs a timeline and a durable guard.\n\n## Inputs and assumptions\n\n- The failing command, input, version, platform and full error output.\n- Access to the revision(s) where it fails and, if possible, where it last passed.\n- Permission boundaries for production logs/data; redact before sharing.\n\n## Outputs\n\n- A minimal reproduction with exact commands and environment.\n- A timeline and a root-cause statement tied to code or configuration.\n- A regression test that fails before the fix and passes after.\n- The fix, its verification, and any related latent issues found.\n- A short incident note when users were affected.\n\n## Permissions and restrictions\n\nDo not run destructive experiments on production. Do not paste secrets, personal data or full\nproduction payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a\nretry, or skipping the test unless that is the documented desired behavior.\n\n## Workflow\n\n1. Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it\n   under `.agents/evidence/` or an incident folder.\n2. Reproduce locally or in an isolated environment. Reduce the input while the failure persists.\n3. Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build,\n   deployment. Use logs, traces, debuggers, `git bisect` and instrumentation.\n4. Form one hypothesis at a time and test it. Record negative results; they narrow the cause.\n5. Write the regression test at the lowest layer that reproduces the cause, not only the symptom.\n6. Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full\n   gate.\n7. Search for the same pattern elsewhere; report siblings without silently expanding scope.\n8. If users were affected, document impact, detection, response and prevention.\n\n## Verification\n\n- The reproduction fails on the pre-fix revision for the stated reason.\n- The regression test fails without the fix and passes with it.\n- The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.\n- The full gate passes; any unrelated failure is recorded separately.\n- Evidence includes the command, revision and log hash.\n\n## Failure and escalation\n\n- Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed;\n  do not guess a fix.\n- Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the\n  cause; do not call a single pass a fix.\n- Production-only: request a safe trace/sample and approval; preserve chain of custody.\n- Security incident: stop, load `security-auditor`, follow the disclosure process, do not publish\n  exploit details.\n\n## Done when\n\nThe failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and\nfull gate pass, and the residual uncertainty is stated.\n"
+      "body_markdown": "# Failure investigator\n\nSeparate symptom from cause. A fix without a reproduced failure is a guess; a cause without a\nregression check will return.\n\n## Activate when\n\n- A test, build, deployment or runtime failure is reported.\n- Behavior is flaky, intermittent or environment-dependent.\n- A proposed fix does not explain the observed failure.\n- A production incident needs a timeline and a durable guard.\n\n## Inputs and assumptions\n\n- The failing command, input, version, platform and full error output.\n- Access to the revision(s) where it fails and, if possible, where it last passed.\n- Permission boundaries for production logs/data; redact before sharing.\n\n## Outputs\n\n- A minimal reproduction with exact commands and environment.\n- A timeline and a root-cause statement tied to code or configuration.\n- A regression test that fails before the fix and passes after.\n- The fix, its verification, and any related latent issues found.\n- A short incident note when users were affected.\n\n## Permissions and restrictions\n\nDo not run destructive experiments on production. Do not paste secrets, personal data or full\nproduction payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a\nretry, or skipping the test unless that is the documented desired behavior.\n\n## Workflow\n\n1. Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it\n   under `.agents/evidence/` or an incident folder.\n2. Reproduce locally or in an isolated environment. Reduce the input while the failure persists.\n3. Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build,\n   deployment. Use logs, traces, debuggers, `git bisect` and instrumentation.\n4. Form one hypothesis at a time and test it. Record negative results; they narrow the cause.\n5. Write the failing test first, at the lowest layer that reproduces the cause, not only the symptom.\n   For geometry, kernels and other numeric code, prefer a golden/snapshot test of the exact output\n   (reviewed, never regenerated to make red green) or a property-based test of the invariant the\n   bug broke, with a fixed seed and the shrunk counterexample kept as a regular test.\n6. Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full\n   gate.\n7. Search for the same pattern elsewhere; report siblings without silently expanding scope.\n8. If users were affected, document impact, detection, response and prevention.\n\n## Flaky tests\n\nA flaky test is a failure with an unknown cause, not noise.\n\n- Measure it: run the test repeatedly on one revision and record the failure rate and conditions.\n- If it cannot be fixed now, quarantine it in `.agents/quarantine.json` with the `test`, an `owner`,\n  an `expires` date and a `reason`, and exclude it in the repository's test command. While\n  quarantined, every `eng verify` reports it as unverified; an expired quarantine blocks the gate.\n- A quarantine ends by fixing the cause and removing the entry, or by deleting the test with the\n  owner's approval and a reason. Extending the date needs a new reason.\n- Never retry a flaky test until it passes and call the run green.\n\n## Verification\n\n- The reproduction fails on the pre-fix revision for the stated reason.\n- The regression test fails without the fix and passes with it.\n- The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.\n- The full gate passes; any unrelated failure is recorded separately.\n- Evidence includes the command, revision and log hash.\n\n## Failure and escalation\n\n- Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed;\n  do not guess a fix.\n- Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the\n  cause; do not call a single pass a fix.\n- Production-only: request a safe trace/sample and approval; preserve chain of custody.\n- Security incident: stop, load `security-auditor`, follow the disclosure process, do not publish\n  exploit details.\n\n## Done when\n\nThe failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and\nfull gate pass, and the residual uncertainty is stated.\n",
+      "body_html": "<p>Separate symptom from cause. A fix without a reproduced failure is a guess; a cause without a regression check will return.</p>\n<h2>Activate when</h2>\n<ul><li>A test, build, deployment or runtime failure is reported.</li><li>Behavior is flaky, intermittent or environment-dependent.</li><li>A proposed fix does not explain the observed failure.</li><li>A production incident needs a timeline and a durable guard.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The failing command, input, version, platform and full error output.</li><li>Access to the revision(s) where it fails and, if possible, where it last passed.</li><li>Permission boundaries for production logs/data; redact before sharing.</li></ul>\n<h2>Outputs</h2>\n<ul><li>A minimal reproduction with exact commands and environment.</li><li>A timeline and a root-cause statement tied to code or configuration.</li><li>A regression test that fails before the fix and passes after.</li><li>The fix, its verification, and any related latent issues found.</li><li>A short incident note when users were affected.</li></ul>\n<h2>Permissions and restrictions</h2>\n<p>Do not run destructive experiments on production. Do not paste secrets, personal data or full production payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a retry, or skipping the test unless that is the documented desired behavior.</p>\n<h2>Workflow</h2>\n<ol><li>Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it under <code>.agents/evidence/</code> or an incident folder.</li><li>Reproduce locally or in an isolated environment. Reduce the input while the failure persists.</li><li>Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build, deployment. Use logs, traces, debuggers, <code>git bisect</code> and instrumentation.</li><li>Form one hypothesis at a time and test it. Record negative results; they narrow the cause.</li><li>Write the failing test first, at the lowest layer that reproduces the cause, not only the symptom. For geometry, kernels and other numeric code, prefer a golden/snapshot test of the exact output (reviewed, never regenerated to make red green) or a property-based test of the invariant the bug broke, with a fixed seed and the shrunk counterexample kept as a regular test.</li><li>Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full gate.</li><li>Search for the same pattern elsewhere; report siblings without silently expanding scope.</li><li>If users were affected, document impact, detection, response and prevention.</li></ol>\n<h2>Flaky tests</h2>\n<p>A flaky test is a failure with an unknown cause, not noise.</p>\n<ul><li>Measure it: run the test repeatedly on one revision and record the failure rate and conditions.</li><li>If it cannot be fixed now, quarantine it in <code>.agents/quarantine.json</code> with the <code>test</code>, an <code>owner</code>, an <code>expires</code> date and a <code>reason</code>, and exclude it in the repository's test command. While quarantined, every <code>eng verify</code> reports it as unverified; an expired quarantine blocks the gate.</li><li>A quarantine ends by fixing the cause and removing the entry, or by deleting the test with the owner's approval and a reason. Extending the date needs a new reason.</li><li>Never retry a flaky test until it passes and call the run green.</li></ul>\n<h2>Verification</h2>\n<ul><li>The reproduction fails on the pre-fix revision for the stated reason.</li><li>The regression test fails without the fix and passes with it.</li><li>The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.</li><li>The full gate passes; any unrelated failure is recorded separately.</li><li>Evidence includes the command, revision and log hash.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed; do not guess a fix.</li><li>Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the cause; do not call a single pass a fix.</li><li>Production-only: request a safe trace/sample and approval; preserve chain of custody.</li><li>Security incident: stop, load <code>security-auditor</code>, follow the disclosure process, do not publish exploit details.</li></ul>\n<h2>Done when</h2>\n<p>The failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and full gate pass, and the residual uncertainty is stated.</p>",
+      "raw_markdown": "---\nname: failure-investigator\ndescription: Reproduce a failure, find its root cause, and leave a permanent regression check. Use for crashes, failing tests, flaky behavior, production incidents, build breaks and unexplained regressions; also use when a fix is proposed without a confirmed cause.\n---\n\n# Failure investigator\n\nSeparate symptom from cause. A fix without a reproduced failure is a guess; a cause without a\nregression check will return.\n\n## Activate when\n\n- A test, build, deployment or runtime failure is reported.\n- Behavior is flaky, intermittent or environment-dependent.\n- A proposed fix does not explain the observed failure.\n- A production incident needs a timeline and a durable guard.\n\n## Inputs and assumptions\n\n- The failing command, input, version, platform and full error output.\n- Access to the revision(s) where it fails and, if possible, where it last passed.\n- Permission boundaries for production logs/data; redact before sharing.\n\n## Outputs\n\n- A minimal reproduction with exact commands and environment.\n- A timeline and a root-cause statement tied to code or configuration.\n- A regression test that fails before the fix and passes after.\n- The fix, its verification, and any related latent issues found.\n- A short incident note when users were affected.\n\n## Permissions and restrictions\n\nDo not run destructive experiments on production. Do not paste secrets, personal data or full\nproduction payloads into issues. Do not \"fix\" by suppressing the error, widening a catch, adding a\nretry, or skipping the test unless that is the documented desired behavior.\n\n## Workflow\n\n1. Capture the failure exactly: command, revision, environment, input, exit code, full trace. Save it\n   under `.agents/evidence/` or an incident folder.\n2. Reproduce locally or in an isolated environment. Reduce the input while the failure persists.\n3. Determine the failing layer: input, parsing, state, concurrency, dependency, environment, build,\n   deployment. Use logs, traces, debuggers, `git bisect` and instrumentation.\n4. Form one hypothesis at a time and test it. Record negative results; they narrow the cause.\n5. Write the failing test first, at the lowest layer that reproduces the cause, not only the symptom.\n   For geometry, kernels and other numeric code, prefer a golden/snapshot test of the exact output\n   (reviewed, never regenerated to make red green) or a property-based test of the invariant the\n   bug broke, with a fixed seed and the shrunk counterexample kept as a regular test.\n6. Implement the smallest fix. Verify the reproduction, the new test, neighboring tests and the full\n   gate.\n7. Search for the same pattern elsewhere; report siblings without silently expanding scope.\n8. If users were affected, document impact, detection, response and prevention.\n\n## Flaky tests\n\nA flaky test is a failure with an unknown cause, not noise.\n\n- Measure it: run the test repeatedly on one revision and record the failure rate and conditions.\n- If it cannot be fixed now, quarantine it in `.agents/quarantine.json` with the `test`, an `owner`,\n  an `expires` date and a `reason`, and exclude it in the repository's test command. While\n  quarantined, every `eng verify` reports it as unverified; an expired quarantine blocks the gate.\n- A quarantine ends by fixing the cause and removing the entry, or by deleting the test with the\n  owner's approval and a reason. Extending the date needs a new reason.\n- Never retry a flaky test until it passes and call the run green.\n\n## Verification\n\n- The reproduction fails on the pre-fix revision for the stated reason.\n- The regression test fails without the fix and passes with it.\n- The fix does not rely on a broader catch, a longer timeout, a retry or disabled validation.\n- The full gate passes; any unrelated failure is recorded separately.\n- Evidence includes the command, revision and log hash.\n\n## Failure and escalation\n\n- Cannot reproduce after a bounded effort: report the evidence, environment gap and next data needed;\n  do not guess a fix.\n- Flaky: measure the failure rate under repetition, identify the race or shared state, and fix the\n  cause; do not call a single pass a fix.\n- Production-only: request a safe trace/sample and approval; preserve chain of custody.\n- Security incident: stop, load `security-auditor`, follow the disclosure process, do not publish\n  exploit details.\n\n## Done when\n\nThe failure is reproduced, the cause is evidenced, the regression test is red-then-green, the fix and\nfull gate pass, and the residual uncertainty is stated.\n"
     },
     {
       "id": "release-verifier",
@@ -457,6 +492,134 @@
       "body_markdown": "# Release verifier\n\nA release is a claim that a specific artifact is fit to ship. Verify the artifact, not the branch\nyou remember testing. Shipping requires human approval; this skill prepares the evidence.\n\n## Activate when\n\n- Preparing a tag, package, binary, container, app build or deployment.\n- A release checklist or signing/provenance step is required.\n- A rollback plan must be validated before a production change.\n\n## Inputs and assumptions\n\n- The exact revision and artifact digest to release.\n- The release policy: versioning, changelog, signing, provenance, supported platforms, compatibility\n  window, approval owners.\n- Credentials for signing/publishing must be injected at runtime; none are read from the repository.\n\n## Outputs\n\n- A release evidence bundle: revision, artifact hashes, full-gate result, security result, SBOM or\n  dependency inventory where available, signature/provenance status, compatibility results.\n- A changelog and version check consistent with the artifact.\n- A tested rollback procedure and an owner.\n- An explicit list of unverified items and residual risks.\n\n## Permissions and restrictions\n\nDo not publish, tag, sign, deploy or rotate credentials without explicit human approval. Do not\nrelease from a dirty tree or an unverified artifact. Do not skip a failed check to meet a date; do not\nedit the changelog to hide a breaking change. Never commit signing keys or tokens.\n\n## Workflow\n\n1. Freeze the candidate: exact commit, clean tree (or documented dirty build), artifact digest.\n2. Run `./.agents/bin/eng verify --profile full --ci`. Confirm the evidence record is for the\n   candidate revision, not an earlier one.\n3. Run `./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>`.\n   It refuses a dirty tree, missing version/notes/rollback, evidence for another HEAD, or a\n   performance regression against the accepted baseline. Pass `--performance-baseline` and\n   `--performance-current`; `perf-check` compares higher/lower-is-better metrics.\n4. Verify the version, changelog, compatibility notes and migration steps. Check that generated\n   artifacts match their source.\n5. Check security: required scanners ran, findings are resolved or explicitly accepted by the owner,\n   dependency/license policy is satisfied.\n6. Verify artifact integrity and provenance: hashes, signatures, SBOM, reproducible build or\n   attestation. Record what is unavailable.\n7. Test the rollback on a copy or staging environment; record the command and expected state.\n8. Obtain human approval for the publish/deploy step. Publish through the approved channel.\n9. After publishing, verify the public artifact hash/signature and a smoke test. Record the result.\n\n## Verification\n\n- Evidence is bound to the released digest, not just a branch name.\n- All required checks pass; skipped/blocked checks are listed and accepted explicitly.\n- Version and changelog match the artifact.\n- Signing/provenance verified with the project's public key/policy where available.\n- Rollback was exercised, not merely described.\n- Public artifact re-downloaded and hash-checked after upload.\n\n## Failure and escalation\n\n- Dirty tree or mismatched digest: stop; rebuild from the tagged revision.\n- Required check blocked: do not release; report the blocker and owner.\n- Security finding unresolved: stop; require an explicit risk acceptance from the owner.\n- Signing key or credential unavailable: stop; do not substitute an unsigned artifact silently.\n- Post-publish verification fails: trigger rollback, preserve evidence, notify the owner.\n\n## Done when\n\nThe exact artifact is identified and hashed, the full gate and security checks have evidence, the\nchangelog/version/compatibility are consistent, rollback is tested, human approval is recorded, and\nremaining risks are stated.\n",
       "body_html": "<p>A release is a claim that a specific artifact is fit to ship. Verify the artifact, not the branch you remember testing. Shipping requires human approval; this skill prepares the evidence.</p>\n<h2>Activate when</h2>\n<ul><li>Preparing a tag, package, binary, container, app build or deployment.</li><li>A release checklist or signing/provenance step is required.</li><li>A rollback plan must be validated before a production change.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The exact revision and artifact digest to release.</li><li>The release policy: versioning, changelog, signing, provenance, supported platforms, compatibility window, approval owners.</li><li>Credentials for signing/publishing must be injected at runtime; none are read from the repository.</li></ul>\n<h2>Outputs</h2>\n<ul><li>A release evidence bundle: revision, artifact hashes, full-gate result, security result, SBOM or dependency inventory where available, signature/provenance status, compatibility results.</li><li>A changelog and version check consistent with the artifact.</li><li>A tested rollback procedure and an owner.</li><li>An explicit list of unverified items and residual risks.</li></ul>\n<h2>Permissions and restrictions</h2>\n<p>Do not publish, tag, sign, deploy or rotate credentials without explicit human approval. Do not release from a dirty tree or an unverified artifact. Do not skip a failed check to meet a date; do not edit the changelog to hide a breaking change. Never commit signing keys or tokens.</p>\n<h2>Workflow</h2>\n<ol><li>Freeze the candidate: exact commit, clean tree (or documented dirty build), artifact digest.</li><li>Run <code>./.agents/bin/eng verify --profile full --ci</code>. Confirm the evidence record is for the candidate revision, not an earlier one.</li><li>Run <code>./.agents/bin/eng release-check --version &lt;v&gt; --artifact &lt;path&gt; --notes &lt;file&gt; --rollback &lt;file&gt;</code>. It refuses a dirty tree, missing version/notes/rollback, evidence for another HEAD, or a performance regression against the accepted baseline. Pass <code>--performance-baseline</code> and <code>--performance-current</code>; <code>perf-check</code> compares higher/lower-is-better metrics.</li><li>Verify the version, changelog, compatibility notes and migration steps. Check that generated artifacts match their source.</li><li>Check security: required scanners ran, findings are resolved or explicitly accepted by the owner, dependency/license policy is satisfied.</li><li>Verify artifact integrity and provenance: hashes, signatures, SBOM, reproducible build or attestation. Record what is unavailable.</li><li>Test the rollback on a copy or staging environment; record the command and expected state.</li><li>Obtain human approval for the publish/deploy step. Publish through the approved channel.</li><li>After publishing, verify the public artifact hash/signature and a smoke test. Record the result.</li></ol>\n<h2>Verification</h2>\n<ul><li>Evidence is bound to the released digest, not just a branch name.</li><li>All required checks pass; skipped/blocked checks are listed and accepted explicitly.</li><li>Version and changelog match the artifact.</li><li>Signing/provenance verified with the project's public key/policy where available.</li><li>Rollback was exercised, not merely described.</li><li>Public artifact re-downloaded and hash-checked after upload.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>Dirty tree or mismatched digest: stop; rebuild from the tagged revision.</li><li>Required check blocked: do not release; report the blocker and owner.</li><li>Security finding unresolved: stop; require an explicit risk acceptance from the owner.</li><li>Signing key or credential unavailable: stop; do not substitute an unsigned artifact silently.</li><li>Post-publish verification fails: trigger rollback, preserve evidence, notify the owner.</li></ul>\n<h2>Done when</h2>\n<p>The exact artifact is identified and hashed, the full gate and security checks have evidence, the changelog/version/compatibility are consistent, rollback is tested, human approval is recorded, and remaining risks are stated.</p>",
       "raw_markdown": "---\nname: release-verifier\ndescription: Validate release readiness before publishing or tagging. Use when preparing a version, artifact, app build, package or deployment; when checking provenance, signatures, compatibility, security findings, rollback and final evidence.\n---\n\n# Release verifier\n\nA release is a claim that a specific artifact is fit to ship. Verify the artifact, not the branch\nyou remember testing. Shipping requires human approval; this skill prepares the evidence.\n\n## Activate when\n\n- Preparing a tag, package, binary, container, app build or deployment.\n- A release checklist or signing/provenance step is required.\n- A rollback plan must be validated before a production change.\n\n## Inputs and assumptions\n\n- The exact revision and artifact digest to release.\n- The release policy: versioning, changelog, signing, provenance, supported platforms, compatibility\n  window, approval owners.\n- Credentials for signing/publishing must be injected at runtime; none are read from the repository.\n\n## Outputs\n\n- A release evidence bundle: revision, artifact hashes, full-gate result, security result, SBOM or\n  dependency inventory where available, signature/provenance status, compatibility results.\n- A changelog and version check consistent with the artifact.\n- A tested rollback procedure and an owner.\n- An explicit list of unverified items and residual risks.\n\n## Permissions and restrictions\n\nDo not publish, tag, sign, deploy or rotate credentials without explicit human approval. Do not\nrelease from a dirty tree or an unverified artifact. Do not skip a failed check to meet a date; do not\nedit the changelog to hide a breaking change. Never commit signing keys or tokens.\n\n## Workflow\n\n1. Freeze the candidate: exact commit, clean tree (or documented dirty build), artifact digest.\n2. Run `./.agents/bin/eng verify --profile full --ci`. Confirm the evidence record is for the\n   candidate revision, not an earlier one.\n3. Run `./.agents/bin/eng release-check --version <v> --artifact <path> --notes <file> --rollback <file>`.\n   It refuses a dirty tree, missing version/notes/rollback, evidence for another HEAD, or a\n   performance regression against the accepted baseline. Pass `--performance-baseline` and\n   `--performance-current`; `perf-check` compares higher/lower-is-better metrics.\n4. Verify the version, changelog, compatibility notes and migration steps. Check that generated\n   artifacts match their source.\n5. Check security: required scanners ran, findings are resolved or explicitly accepted by the owner,\n   dependency/license policy is satisfied.\n6. Verify artifact integrity and provenance: hashes, signatures, SBOM, reproducible build or\n   attestation. Record what is unavailable.\n7. Test the rollback on a copy or staging environment; record the command and expected state.\n8. Obtain human approval for the publish/deploy step. Publish through the approved channel.\n9. After publishing, verify the public artifact hash/signature and a smoke test. Record the result.\n\n## Verification\n\n- Evidence is bound to the released digest, not just a branch name.\n- All required checks pass; skipped/blocked checks are listed and accepted explicitly.\n- Version and changelog match the artifact.\n- Signing/provenance verified with the project's public key/policy where available.\n- Rollback was exercised, not merely described.\n- Public artifact re-downloaded and hash-checked after upload.\n\n## Failure and escalation\n\n- Dirty tree or mismatched digest: stop; rebuild from the tagged revision.\n- Required check blocked: do not release; report the blocker and owner.\n- Security finding unresolved: stop; require an explicit risk acceptance from the owner.\n- Signing key or credential unavailable: stop; do not substitute an unsigned artifact silently.\n- Post-publish verification fails: trigger rollback, preserve evidence, notify the owner.\n\n## Done when\n\nThe exact artifact is identified and hashed, the full gate and security checks have evidence, the\nchangelog/version/compatibility are consistent, rollback is tested, human approval is recorded, and\nremaining risks are stated.\n"
+    },
+    {
+      "id": "verification-tiers",
+      "name": "Verification tiers",
+      "description": "Choose and run the right verification profile — fast for the inner loop, full on merge, nightly for fuzzing, mutation, benchmarks and heavy suites — and record its scope. Use when deciding what to run for a change, configuring profiles, or reporting which checks a result covers.",
+      "activate": "Choosing what to run before reporting a change.",
+      "phase": "verify",
+      "risk": "medium",
+      "tags": [
+        "profiles",
+        "scope",
+        "nightly"
+      ],
+      "order": 11,
+      "source_path": "skills/verification-tiers/SKILL.md",
+      "body_markdown": "# Verification tiers\n\nThree profiles, one evidence standard. A cheaper profile covers less; it never reports more than it\nran. Anything outside the recorded scope is unverified.\n\n| Profile | When | Runs | Budget |\n| --- | --- | --- | --- |\n| `fast` | Every edit loop | Changed units: format, lint, targeted tests | Seconds to a few minutes |\n| `full` | Before merge | The required gate plus security scanners | The repository's CI time |\n| `nightly` | Scheduled | Fuzzing, mutation testing, benchmarks, heavy geometry or integration suites | Hours, off the critical path |\n\n## Activate when\n\n- Choosing what to run before reporting a change.\n- Configuring `commands.fast`, `commands.full` or `commands.nightly` in `.agents/engineering.json`.\n- A check is too slow for the inner loop and someone proposes dropping it.\n\n## Inputs and assumptions\n\n- `./.agents/bin/eng impact --base origin/main` for the changed files, symbols and likely tests.\n- The repository's required checks (`AGENTS.md`, CI) for the `full` profile.\n\n## Permissions and restrictions\n\n- Moving a check from `full` to `nightly` lowers the merge gate; that is a policy change and needs the\n  repository owner's approval.\n- `nightly` has no fallback: an empty nightly profile is `blocked`, never a pass.\n- Do not narrow `--scope` and present the result as covering the whole change.\n\n## Workflow\n\n1. Run `eng impact` and pick the tests it lists plus the area's own suite.\n2. Inner loop: `./.agents/bin/eng verify --profile fast --scope \"<crates, packages or tests run>\"`.\n3. Before merge: `./.agents/bin/eng verify --profile full`. This is the gate; its evidence must be\n   for the revision that merges.\n4. Scheduled: `./.agents/bin/eng verify --profile nightly`. Failures open a work item with an owner;\n   they do not silently wait for the next night.\n5. Report the profile, the scope and the evidence id. List what the profile did not cover.\n\n## Verification\n\n- The evidence record shows `profile`, `scope` and `duration_s`, and a verdict for exactly that scope.\n- Every change that merges has `full` evidence on its merge revision.\n- A `nightly` failure has a work item and an owner within one working day.\n\n## Failure and escalation\n\n- `fast` is too slow: measure it first (`build-performance`), then narrow by impact; do not delete\n  checks.\n- `full` fails on something unrelated: record it as pre-existing with evidence and escalate; do not\n  merge over it without the owner's decision.\n- No `nightly` profile exists for code that needs one (parsers, kernels, unsafe code): propose one.\n\n## Done when\n\nThe result names its profile and scope, the evidence matches it, and anything not covered is listed\nas unverified.\n",
+      "body_html": "<p>Three profiles, one evidence standard. A cheaper profile covers less; it never reports more than it ran. Anything outside the recorded scope is unverified.</p>\n<p>| Profile | When | Runs | Budget | | --- | --- | --- | --- | | <code>fast</code> | Every edit loop | Changed units: format, lint, targeted tests | Seconds to a few minutes | | <code>full</code> | Before merge | The required gate plus security scanners | The repository's CI time | | <code>nightly</code> | Scheduled | Fuzzing, mutation testing, benchmarks, heavy geometry or integration suites | Hours, off the critical path |</p>\n<h2>Activate when</h2>\n<ul><li>Choosing what to run before reporting a change.</li><li>Configuring <code>commands.fast</code>, <code>commands.full</code> or <code>commands.nightly</code> in <code>.agents/engineering.json</code>.</li><li>A check is too slow for the inner loop and someone proposes dropping it.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li><code>./.agents/bin/eng impact --base origin/main</code> for the changed files, symbols and likely tests.</li><li>The repository's required checks (<code>AGENTS.md</code>, CI) for the <code>full</code> profile.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>Moving a check from <code>full</code> to <code>nightly</code> lowers the merge gate; that is a policy change and needs the repository owner's approval.</li><li><code>nightly</code> has no fallback: an empty nightly profile is <code>blocked</code>, never a pass.</li><li>Do not narrow <code>--scope</code> and present the result as covering the whole change.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Run <code>eng impact</code> and pick the tests it lists plus the area's own suite.</li><li>Inner loop: <code>./.agents/bin/eng verify --profile fast --scope \"&lt;crates, packages or tests run&gt;\"</code>.</li><li>Before merge: <code>./.agents/bin/eng verify --profile full</code>. This is the gate; its evidence must be for the revision that merges.</li><li>Scheduled: <code>./.agents/bin/eng verify --profile nightly</code>. Failures open a work item with an owner; they do not silently wait for the next night.</li><li>Report the profile, the scope and the evidence id. List what the profile did not cover.</li></ol>\n<h2>Verification</h2>\n<ul><li>The evidence record shows <code>profile</code>, <code>scope</code> and <code>duration_s</code>, and a verdict for exactly that scope.</li><li>Every change that merges has <code>full</code> evidence on its merge revision.</li><li>A <code>nightly</code> failure has a work item and an owner within one working day.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li><code>fast</code> is too slow: measure it first (<code>build-performance</code>), then narrow by impact; do not delete checks.</li><li><code>full</code> fails on something unrelated: record it as pre-existing with evidence and escalate; do not merge over it without the owner's decision.</li><li>No <code>nightly</code> profile exists for code that needs one (parsers, kernels, unsafe code): propose one.</li></ul>\n<h2>Done when</h2>\n<p>The result names its profile and scope, the evidence matches it, and anything not covered is listed as unverified.</p>",
+      "raw_markdown": "---\nname: verification-tiers\ndescription: Choose and run the right verification profile — fast for the inner loop, full on merge, nightly for fuzzing, mutation, benchmarks and heavy suites — and record its scope. Use when deciding what to run for a change, configuring profiles, or reporting which checks a result covers.\n---\n\n# Verification tiers\n\nThree profiles, one evidence standard. A cheaper profile covers less; it never reports more than it\nran. Anything outside the recorded scope is unverified.\n\n| Profile | When | Runs | Budget |\n| --- | --- | --- | --- |\n| `fast` | Every edit loop | Changed units: format, lint, targeted tests | Seconds to a few minutes |\n| `full` | Before merge | The required gate plus security scanners | The repository's CI time |\n| `nightly` | Scheduled | Fuzzing, mutation testing, benchmarks, heavy geometry or integration suites | Hours, off the critical path |\n\n## Activate when\n\n- Choosing what to run before reporting a change.\n- Configuring `commands.fast`, `commands.full` or `commands.nightly` in `.agents/engineering.json`.\n- A check is too slow for the inner loop and someone proposes dropping it.\n\n## Inputs and assumptions\n\n- `./.agents/bin/eng impact --base origin/main` for the changed files, symbols and likely tests.\n- The repository's required checks (`AGENTS.md`, CI) for the `full` profile.\n\n## Permissions and restrictions\n\n- Moving a check from `full` to `nightly` lowers the merge gate; that is a policy change and needs the\n  repository owner's approval.\n- `nightly` has no fallback: an empty nightly profile is `blocked`, never a pass.\n- Do not narrow `--scope` and present the result as covering the whole change.\n\n## Workflow\n\n1. Run `eng impact` and pick the tests it lists plus the area's own suite.\n2. Inner loop: `./.agents/bin/eng verify --profile fast --scope \"<crates, packages or tests run>\"`.\n3. Before merge: `./.agents/bin/eng verify --profile full`. This is the gate; its evidence must be\n   for the revision that merges.\n4. Scheduled: `./.agents/bin/eng verify --profile nightly`. Failures open a work item with an owner;\n   they do not silently wait for the next night.\n5. Report the profile, the scope and the evidence id. List what the profile did not cover.\n\n## Verification\n\n- The evidence record shows `profile`, `scope` and `duration_s`, and a verdict for exactly that scope.\n- Every change that merges has `full` evidence on its merge revision.\n- A `nightly` failure has a work item and an owner within one working day.\n\n## Failure and escalation\n\n- `fast` is too slow: measure it first (`build-performance`), then narrow by impact; do not delete\n  checks.\n- `full` fails on something unrelated: record it as pre-existing with evidence and escalate; do not\n  merge over it without the owner's decision.\n- No `nightly` profile exists for code that needs one (parsers, kernels, unsafe code): propose one.\n\n## Done when\n\nThe result names its profile and scope, the evidence matches it, and anything not covered is listed\nas unverified.\n"
+    },
+    {
+      "id": "independent-verification",
+      "name": "Independent verification",
+      "description": "Verify a change with a fresh agent that did not build it and tries to break it. Use before a required gate is reported as passed, when one agent built a change and another must certify it, or when a repository requires separation of builder and verifier.",
+      "activate": "A change is ready for its required gate.",
+      "phase": "verify",
+      "risk": "high",
+      "tags": [
+        "review",
+        "separation",
+        "gate"
+      ],
+      "order": 12,
+      "source_path": "skills/independent-verification/SKILL.md",
+      "body_markdown": "# Independent verification\n\nThe builder never certifies its own work. A verifier with fresh context reads the diff, reruns the\nchecks and tries to break the change. Self-review is useful, but it does not satisfy a required gate.\n\n## Activate when\n\n- A change is ready for its required gate.\n- The repository sets `\"verification\": {\"independent\": true}` in `.agents/engineering.json`.\n- A builder agent reports \"done\" and the work is about to merge.\n\n## Inputs and assumptions\n\n- The diff, the task's acceptance criteria and the builder's evidence id — not the builder's\n  conversation or conclusions.\n- Access to run the repository's checks in a clean worktree.\n\n## Permissions and restrictions\n\n- The verifier does not edit the change. It reports findings; the builder (or a new owner) fixes.\n- The verifier is a different identity from the builder: a different agent run, model session or\n  person. Record both.\n- Identities in evidence are declared, not authenticated; the record shows separation of duties, it\n  does not prove it. Keep the harness logs that show which run did what.\n\n## Workflow\n\n1. Start from a clean checkout of the change's head; do not reuse the builder's worktree or output.\n2. Read the diff and the acceptance criteria. Write down what would make the change wrong.\n3. Try to break it: edge inputs, error paths, concurrency, compatibility, security boundaries, the\n   behavior the change claims to preserve. Add a test for anything you find.\n4. Run the gate yourself:\n   `./.agents/bin/eng verify --profile full --builder <builder> --verifier <you> --run-id <id>`.\n5. Report findings with file and line, the evidence id, and a verdict: accept, accept with notes, or\n   reject.\n\n## Verification\n\n- The evidence record has `run.builder` and `run.verifier`, and they differ.\n- The verifier's evidence is on the same revision the builder reported.\n- Each finding is either fixed with a test or explicitly accepted by the owner.\n\n## Failure and escalation\n\n- The verifier cannot reproduce the builder's green result: the gate is not passed; report both\n  records.\n- No independent verifier is available: report the gate as `blocked`, not passed.\n- Builder and verifier disagree on a requirement: escalate to the task owner.\n\n## Done when\n\nA verifier other than the builder has run the gate on the final revision, recorded both identities,\nand its findings are resolved or accepted by the owner.\n",
+      "body_html": "<p>The builder never certifies its own work. A verifier with fresh context reads the diff, reruns the checks and tries to break the change. Self-review is useful, but it does not satisfy a required gate.</p>\n<h2>Activate when</h2>\n<ul><li>A change is ready for its required gate.</li><li>The repository sets <code>\"verification\": {\"independent\": true}</code> in <code>.agents/engineering.json</code>.</li><li>A builder agent reports \"done\" and the work is about to merge.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The diff, the task's acceptance criteria and the builder's evidence id — not the builder's conversation or conclusions.</li><li>Access to run the repository's checks in a clean worktree.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>The verifier does not edit the change. It reports findings; the builder (or a new owner) fixes.</li><li>The verifier is a different identity from the builder: a different agent run, model session or person. Record both.</li><li>Identities in evidence are declared, not authenticated; the record shows separation of duties, it does not prove it. Keep the harness logs that show which run did what.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Start from a clean checkout of the change's head; do not reuse the builder's worktree or output.</li><li>Read the diff and the acceptance criteria. Write down what would make the change wrong.</li><li>Try to break it: edge inputs, error paths, concurrency, compatibility, security boundaries, the behavior the change claims to preserve. Add a test for anything you find.</li><li>Run the gate yourself: <code>./.agents/bin/eng verify --profile full --builder &lt;builder&gt; --verifier &lt;you&gt; --run-id &lt;id&gt;</code>.</li><li>Report findings with file and line, the evidence id, and a verdict: accept, accept with notes, or reject.</li></ol>\n<h2>Verification</h2>\n<ul><li>The evidence record has <code>run.builder</code> and <code>run.verifier</code>, and they differ.</li><li>The verifier's evidence is on the same revision the builder reported.</li><li>Each finding is either fixed with a test or explicitly accepted by the owner.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>The verifier cannot reproduce the builder's green result: the gate is not passed; report both records.</li><li>No independent verifier is available: report the gate as <code>blocked</code>, not passed.</li><li>Builder and verifier disagree on a requirement: escalate to the task owner.</li></ul>\n<h2>Done when</h2>\n<p>A verifier other than the builder has run the gate on the final revision, recorded both identities, and its findings are resolved or accepted by the owner.</p>",
+      "raw_markdown": "---\nname: independent-verification\ndescription: Verify a change with a fresh agent that did not build it and tries to break it. Use before a required gate is reported as passed, when one agent built a change and another must certify it, or when a repository requires separation of builder and verifier.\n---\n\n# Independent verification\n\nThe builder never certifies its own work. A verifier with fresh context reads the diff, reruns the\nchecks and tries to break the change. Self-review is useful, but it does not satisfy a required gate.\n\n## Activate when\n\n- A change is ready for its required gate.\n- The repository sets `\"verification\": {\"independent\": true}` in `.agents/engineering.json`.\n- A builder agent reports \"done\" and the work is about to merge.\n\n## Inputs and assumptions\n\n- The diff, the task's acceptance criteria and the builder's evidence id — not the builder's\n  conversation or conclusions.\n- Access to run the repository's checks in a clean worktree.\n\n## Permissions and restrictions\n\n- The verifier does not edit the change. It reports findings; the builder (or a new owner) fixes.\n- The verifier is a different identity from the builder: a different agent run, model session or\n  person. Record both.\n- Identities in evidence are declared, not authenticated; the record shows separation of duties, it\n  does not prove it. Keep the harness logs that show which run did what.\n\n## Workflow\n\n1. Start from a clean checkout of the change's head; do not reuse the builder's worktree or output.\n2. Read the diff and the acceptance criteria. Write down what would make the change wrong.\n3. Try to break it: edge inputs, error paths, concurrency, compatibility, security boundaries, the\n   behavior the change claims to preserve. Add a test for anything you find.\n4. Run the gate yourself:\n   `./.agents/bin/eng verify --profile full --builder <builder> --verifier <you> --run-id <id>`.\n5. Report findings with file and line, the evidence id, and a verdict: accept, accept with notes, or\n   reject.\n\n## Verification\n\n- The evidence record has `run.builder` and `run.verifier`, and they differ.\n- The verifier's evidence is on the same revision the builder reported.\n- Each finding is either fixed with a test or explicitly accepted by the owner.\n\n## Failure and escalation\n\n- The verifier cannot reproduce the builder's green result: the gate is not passed; report both\n  records.\n- No independent verifier is available: report the gate as `blocked`, not passed.\n- Builder and verifier disagree on a requirement: escalate to the task owner.\n\n## Done when\n\nA verifier other than the builder has run the gate on the final revision, recorded both identities,\nand its findings are resolved or accepted by the owner.\n"
+    },
+    {
+      "id": "parallel-agent-work",
+      "name": "Parallel agent work",
+      "description": "Run many agents on many repositories at once without collisions. Use when several agents or sub-agents work concurrently, share a build machine, or open pull requests against the same target; covers isolation, ownership, machine limits, merge queues, stop conditions and handoff.",
+      "activate": "Two or more agents or sub-agents will run at the same time on one machine or one repository.",
+      "phase": "plan",
+      "risk": "high",
+      "tags": [
+        "fleet",
+        "worktrees",
+        "merge-queue",
+        "limits"
+      ],
+      "order": 13,
+      "source_path": "skills/parallel-agent-work/SKILL.md",
+      "body_markdown": "# Parallel agent work\n\nOne task is one git worktree, one container (or equivalent sandbox), one branch and one pull\nrequest. Agents never share a working tree. Work that cannot run yet waits in a queue; it does not\ncollide. `parallel-executor` splits a single task into units; this skill runs many tasks at once.\n\n## Activate when\n\n- Two or more agents or sub-agents will run at the same time on one machine or one repository.\n- Builds are offloaded to a shared server or runner.\n- Several pull requests will target the same branch in the same window.\n\n## Inputs and assumptions\n\n- A task list with an owner per task and the files or modules each task may change.\n- The machine budget: cores, memory, disk, and how many builds it can take at once.\n- The target branch's required checks and whether it has a merge queue or auto-merge.\n\n## Permissions and restrictions\n\n- No two concurrent agents own the same file or module. Shared files (lockfiles, schemas, generated\n  code, CI, release metadata) belong to one integration owner and change in sequence.\n- An agent works only in its own worktree: `./.agents/bin/eng worktree create <task> --owner <agent>`.\n- No concurrent writes to a shared cache, database, device, port or fixture unless the tool is built\n  for it (a compiler cache with locking is; a test database is not).\n- Rewriting shared or published history, deploying and merging without the required checks need\n  explicit human approval.\n\n## Workflow\n\n1. Write the ownership table: task, owner, owned paths, verification command, dependencies. Reject a\n   plan where two rows own the same path.\n2. Set machine limits before starting: a cap on concurrent builds (`parallel.max_worktrees`, build\n   job flags such as `CARGO_BUILD_JOBS`, or cgroup/`systemd-run` CPU and memory limits). When the cap\n   is reached, new work queues.\n3. Give each agent: its scope, owned paths, verification command, budget, stop conditions and the\n   handoff format below.\n4. Each agent baselines in its worktree, implements, and runs `eng verify --profile fast`, then the\n   repository's required gate.\n5. Land through the merge queue or auto-merge with required checks, one change at a time. A change\n   that touches a shared file waits for the integration owner.\n6. After each merge, dependent branches update onto the new target and re-run their gate.\n7. Remove finished worktrees with `eng worktree remove <task>`; run `eng digest` across the\n   repositories to see stalled worktrees and failed gates.\n\n## Stop conditions\n\nAn agent stops and hands off when it needs a path it does not own, its budget is spent, the same\ncheck fails twice for an unexplained reason, it needs a credential or approval, or the target moved\nunder it in a way that changes its plan.\n\n## Handoff note\n\nState: task, branch, last commit, what is done, what is not, commands run with results and\nevidence id, open questions, and the next concrete step. A handoff without evidence is a status\nupdate, not a result.\n\n## Verification\n\n- Every merged change has its own passing gate evidence on the revision that merged.\n- No two branches in flight changed the same owned path.\n- The machine never ran more concurrent builds than its cap (record the cap and the peak).\n- `eng digest` lists no stalled worktree that nobody owns.\n\n## Failure and escalation\n\n- Ownership conflict discovered mid-task: the later agent stops and proposes a patch to the owner.\n- The shared machine is saturated: lower concurrency; do not drop required checks to fit.\n- The merge queue keeps failing on one change: remove it from the queue and investigate with\n  `failure-investigator`; do not retry blindly.\n\n## Done when\n\nEvery task is merged with evidence, handed off with a note, or explicitly abandoned with a reason,\nand no worktree, container or branch is left without an owner.\n",
+      "body_html": "<p>One task is one git worktree, one container (or equivalent sandbox), one branch and one pull request. Agents never share a working tree. Work that cannot run yet waits in a queue; it does not collide. <code>parallel-executor</code> splits a single task into units; this skill runs many tasks at once.</p>\n<h2>Activate when</h2>\n<ul><li>Two or more agents or sub-agents will run at the same time on one machine or one repository.</li><li>Builds are offloaded to a shared server or runner.</li><li>Several pull requests will target the same branch in the same window.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>A task list with an owner per task and the files or modules each task may change.</li><li>The machine budget: cores, memory, disk, and how many builds it can take at once.</li><li>The target branch's required checks and whether it has a merge queue or auto-merge.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>No two concurrent agents own the same file or module. Shared files (lockfiles, schemas, generated code, CI, release metadata) belong to one integration owner and change in sequence.</li><li>An agent works only in its own worktree: <code>./.agents/bin/eng worktree create &lt;task&gt; --owner &lt;agent&gt;</code>.</li><li>No concurrent writes to a shared cache, database, device, port or fixture unless the tool is built for it (a compiler cache with locking is; a test database is not).</li><li>Rewriting shared or published history, deploying and merging without the required checks need explicit human approval.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Write the ownership table: task, owner, owned paths, verification command, dependencies. Reject a plan where two rows own the same path.</li><li>Set machine limits before starting: a cap on concurrent builds (<code>parallel.max_worktrees</code>, build job flags such as <code>CARGO_BUILD_JOBS</code>, or cgroup/<code>systemd-run</code> CPU and memory limits). When the cap is reached, new work queues.</li><li>Give each agent: its scope, owned paths, verification command, budget, stop conditions and the handoff format below.</li><li>Each agent baselines in its worktree, implements, and runs <code>eng verify --profile fast</code>, then the repository's required gate.</li><li>Land through the merge queue or auto-merge with required checks, one change at a time. A change that touches a shared file waits for the integration owner.</li><li>After each merge, dependent branches update onto the new target and re-run their gate.</li><li>Remove finished worktrees with <code>eng worktree remove &lt;task&gt;</code>; run <code>eng digest</code> across the repositories to see stalled worktrees and failed gates.</li></ol>\n<h2>Stop conditions</h2>\n<p>An agent stops and hands off when it needs a path it does not own, its budget is spent, the same check fails twice for an unexplained reason, it needs a credential or approval, or the target moved under it in a way that changes its plan.</p>\n<h2>Handoff note</h2>\n<p>State: task, branch, last commit, what is done, what is not, commands run with results and evidence id, open questions, and the next concrete step. A handoff without evidence is a status update, not a result.</p>\n<h2>Verification</h2>\n<ul><li>Every merged change has its own passing gate evidence on the revision that merged.</li><li>No two branches in flight changed the same owned path.</li><li>The machine never ran more concurrent builds than its cap (record the cap and the peak).</li><li><code>eng digest</code> lists no stalled worktree that nobody owns.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>Ownership conflict discovered mid-task: the later agent stops and proposes a patch to the owner.</li><li>The shared machine is saturated: lower concurrency; do not drop required checks to fit.</li><li>The merge queue keeps failing on one change: remove it from the queue and investigate with <code>failure-investigator</code>; do not retry blindly.</li></ul>\n<h2>Done when</h2>\n<p>Every task is merged with evidence, handed off with a note, or explicitly abandoned with a reason, and no worktree, container or branch is left without an owner.</p>",
+      "raw_markdown": "---\nname: parallel-agent-work\ndescription: Run many agents on many repositories at once without collisions. Use when several agents or sub-agents work concurrently, share a build machine, or open pull requests against the same target; covers isolation, ownership, machine limits, merge queues, stop conditions and handoff.\n---\n\n# Parallel agent work\n\nOne task is one git worktree, one container (or equivalent sandbox), one branch and one pull\nrequest. Agents never share a working tree. Work that cannot run yet waits in a queue; it does not\ncollide. `parallel-executor` splits a single task into units; this skill runs many tasks at once.\n\n## Activate when\n\n- Two or more agents or sub-agents will run at the same time on one machine or one repository.\n- Builds are offloaded to a shared server or runner.\n- Several pull requests will target the same branch in the same window.\n\n## Inputs and assumptions\n\n- A task list with an owner per task and the files or modules each task may change.\n- The machine budget: cores, memory, disk, and how many builds it can take at once.\n- The target branch's required checks and whether it has a merge queue or auto-merge.\n\n## Permissions and restrictions\n\n- No two concurrent agents own the same file or module. Shared files (lockfiles, schemas, generated\n  code, CI, release metadata) belong to one integration owner and change in sequence.\n- An agent works only in its own worktree: `./.agents/bin/eng worktree create <task> --owner <agent>`.\n- No concurrent writes to a shared cache, database, device, port or fixture unless the tool is built\n  for it (a compiler cache with locking is; a test database is not).\n- Rewriting shared or published history, deploying and merging without the required checks need\n  explicit human approval.\n\n## Workflow\n\n1. Write the ownership table: task, owner, owned paths, verification command, dependencies. Reject a\n   plan where two rows own the same path.\n2. Set machine limits before starting: a cap on concurrent builds (`parallel.max_worktrees`, build\n   job flags such as `CARGO_BUILD_JOBS`, or cgroup/`systemd-run` CPU and memory limits). When the cap\n   is reached, new work queues.\n3. Give each agent: its scope, owned paths, verification command, budget, stop conditions and the\n   handoff format below.\n4. Each agent baselines in its worktree, implements, and runs `eng verify --profile fast`, then the\n   repository's required gate.\n5. Land through the merge queue or auto-merge with required checks, one change at a time. A change\n   that touches a shared file waits for the integration owner.\n6. After each merge, dependent branches update onto the new target and re-run their gate.\n7. Remove finished worktrees with `eng worktree remove <task>`; run `eng digest` across the\n   repositories to see stalled worktrees and failed gates.\n\n## Stop conditions\n\nAn agent stops and hands off when it needs a path it does not own, its budget is spent, the same\ncheck fails twice for an unexplained reason, it needs a credential or approval, or the target moved\nunder it in a way that changes its plan.\n\n## Handoff note\n\nState: task, branch, last commit, what is done, what is not, commands run with results and\nevidence id, open questions, and the next concrete step. A handoff without evidence is a status\nupdate, not a result.\n\n## Verification\n\n- Every merged change has its own passing gate evidence on the revision that merged.\n- No two branches in flight changed the same owned path.\n- The machine never ran more concurrent builds than its cap (record the cap and the peak).\n- `eng digest` lists no stalled worktree that nobody owns.\n\n## Failure and escalation\n\n- Ownership conflict discovered mid-task: the later agent stops and proposes a patch to the owner.\n- The shared machine is saturated: lower concurrency; do not drop required checks to fit.\n- The merge queue keeps failing on one change: remove it from the queue and investigate with\n  `failure-investigator`; do not retry blindly.\n\n## Done when\n\nEvery task is merged with evidence, handed off with a note, or explicitly abandoned with a reason,\nand no worktree, container or branch is left without an owner.\n"
+    },
+    {
+      "id": "build-performance",
+      "name": "Build performance",
+      "description": "Make builds and CI faster without lowering the gate. Use when compile, test or CI time is the bottleneck, when adding a compiler cache, faster linker or test runner, or when someone claims a build optimisation; every change needs before/after numbers.",
+      "activate": "Builds, tests or CI runs are the bottleneck for agents or reviewers.",
+      "phase": "baseline",
+      "risk": "medium",
+      "tags": [
+        "ci",
+        "cache",
+        "rust",
+        "build-time"
+      ],
+      "order": 14,
+      "source_path": "skills/build-performance/SKILL.md",
+      "body_markdown": "# Build performance\n\nMeasure before changing anything, change one thing, measure again, keep the number. An optimisation\nis accepted only with before/after data and no drop in what the gate checks.\n\n## Activate when\n\n- Builds, tests or CI runs are the bottleneck for agents or reviewers.\n- Adding or tuning a compiler cache, linker, test runner, workspace layout or CI cache.\n- Someone reports a build as \"faster\" without numbers.\n\n## Inputs and assumptions\n\n- The exact command, toolchain version, build profile, machine and whether the cache was warm.\n- The CI workflow and its required checks.\n- For a shared cache: an S3-compatible bucket (or equivalent) with separate read-only and read-write\n  credentials, injected at runtime.\n\n## Permissions and restrictions\n\n- Only main-branch CI writes to a shared cache. Agents and pull-request builds get read-only\n  credentials, so an unmerged change cannot poison what later builds trust.\n- Separate cache prefixes per project and per toolchain version.\n- Cache and signing credentials never enter the repository, logs or evidence.\n- Removing, skipping or narrowing a required check is not a build optimisation.\n\n## Workflow\n\n1. Baseline: cold and warm timings with enough runs to see variance (`hyperfine`), per-crate timing\n   (`cargo build --timings`), cache statistics (for example `sccache --show-stats`), CI step times.\n2. Find the dominant cost: linking, a few large crates, test execution, dependency rebuilds, cache\n   misses, or queueing for a runner.\n3. Apply one change. Common ones for Rust:\n   - a shared compiler cache with path remapping and a fixed workdir so cache keys match across\n     machines; incremental compilation off in CI (`CARGO_INCREMENTAL=0`);\n   - a faster linker (mold or lld);\n   - a faster test runner (cargo-nextest) and change-scoped tests from `eng impact`;\n   - workspace-hack or dependency-layer caching (cargo-hakari, cargo-chef) where rebuilds dominate.\n4. Measure again under the same conditions. Record both numbers with the change\n   (`eng verify --cache-stats <json>` keeps cache statistics in evidence).\n5. Keep it only if it is faster and the gate still runs the same checks; otherwise revert.\n\n## Verification\n\n- Before and after numbers with run count, cold/warm state and machine are in the PR or evidence.\n- The required checks before and after are the same list.\n- Cache write access is limited to main-branch CI (show the credential scoping).\n\n## Failure and escalation\n\n- Faster but flaky: revert and investigate (`failure-investigator`).\n- Cache hit rate stays low: check keys (paths, toolchain, env, `RUSTFLAGS`) before adding capacity.\n- A speedup needs a gate change: stop and ask the owner; record it as a policy decision.\n\n## Done when\n\nThe change is merged with before/after numbers, the gate is unchanged, and the numbers are kept\nwhere the next improvement loop can read them.\n",
+      "body_html": "<p>Measure before changing anything, change one thing, measure again, keep the number. An optimisation is accepted only with before/after data and no drop in what the gate checks.</p>\n<h2>Activate when</h2>\n<ul><li>Builds, tests or CI runs are the bottleneck for agents or reviewers.</li><li>Adding or tuning a compiler cache, linker, test runner, workspace layout or CI cache.</li><li>Someone reports a build as \"faster\" without numbers.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The exact command, toolchain version, build profile, machine and whether the cache was warm.</li><li>The CI workflow and its required checks.</li><li>For a shared cache: an S3-compatible bucket (or equivalent) with separate read-only and read-write credentials, injected at runtime.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>Only main-branch CI writes to a shared cache. Agents and pull-request builds get read-only credentials, so an unmerged change cannot poison what later builds trust.</li><li>Separate cache prefixes per project and per toolchain version.</li><li>Cache and signing credentials never enter the repository, logs or evidence.</li><li>Removing, skipping or narrowing a required check is not a build optimisation.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Baseline: cold and warm timings with enough runs to see variance (<code>hyperfine</code>), per-crate timing (<code>cargo build --timings</code>), cache statistics (for example <code>sccache --show-stats</code>), CI step times.</li><li>Find the dominant cost: linking, a few large crates, test execution, dependency rebuilds, cache misses, or queueing for a runner.</li><li>Apply one change. Common ones for Rust:</li></ol>\n<ul><li>a shared compiler cache with path remapping and a fixed workdir so cache keys match across machines; incremental compilation off in CI (<code>CARGO_INCREMENTAL=0</code>);</li><li>a faster linker (mold or lld);</li><li>a faster test runner (cargo-nextest) and change-scoped tests from <code>eng impact</code>;</li><li>workspace-hack or dependency-layer caching (cargo-hakari, cargo-chef) where rebuilds dominate.</li></ul>\n<ol start=\"4\"><li>Measure again under the same conditions. Record both numbers with the change (<code>eng verify --cache-stats &lt;json&gt;</code> keeps cache statistics in evidence).</li><li>Keep it only if it is faster and the gate still runs the same checks; otherwise revert.</li></ol>\n<h2>Verification</h2>\n<ul><li>Before and after numbers with run count, cold/warm state and machine are in the PR or evidence.</li><li>The required checks before and after are the same list.</li><li>Cache write access is limited to main-branch CI (show the credential scoping).</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>Faster but flaky: revert and investigate (<code>failure-investigator</code>).</li><li>Cache hit rate stays low: check keys (paths, toolchain, env, <code>RUSTFLAGS</code>) before adding capacity.</li><li>A speedup needs a gate change: stop and ask the owner; record it as a policy decision.</li></ul>\n<h2>Done when</h2>\n<p>The change is merged with before/after numbers, the gate is unchanged, and the numbers are kept where the next improvement loop can read them.</p>",
+      "raw_markdown": "---\nname: build-performance\ndescription: Make builds and CI faster without lowering the gate. Use when compile, test or CI time is the bottleneck, when adding a compiler cache, faster linker or test runner, or when someone claims a build optimisation; every change needs before/after numbers.\n---\n\n# Build performance\n\nMeasure before changing anything, change one thing, measure again, keep the number. An optimisation\nis accepted only with before/after data and no drop in what the gate checks.\n\n## Activate when\n\n- Builds, tests or CI runs are the bottleneck for agents or reviewers.\n- Adding or tuning a compiler cache, linker, test runner, workspace layout or CI cache.\n- Someone reports a build as \"faster\" without numbers.\n\n## Inputs and assumptions\n\n- The exact command, toolchain version, build profile, machine and whether the cache was warm.\n- The CI workflow and its required checks.\n- For a shared cache: an S3-compatible bucket (or equivalent) with separate read-only and read-write\n  credentials, injected at runtime.\n\n## Permissions and restrictions\n\n- Only main-branch CI writes to a shared cache. Agents and pull-request builds get read-only\n  credentials, so an unmerged change cannot poison what later builds trust.\n- Separate cache prefixes per project and per toolchain version.\n- Cache and signing credentials never enter the repository, logs or evidence.\n- Removing, skipping or narrowing a required check is not a build optimisation.\n\n## Workflow\n\n1. Baseline: cold and warm timings with enough runs to see variance (`hyperfine`), per-crate timing\n   (`cargo build --timings`), cache statistics (for example `sccache --show-stats`), CI step times.\n2. Find the dominant cost: linking, a few large crates, test execution, dependency rebuilds, cache\n   misses, or queueing for a runner.\n3. Apply one change. Common ones for Rust:\n   - a shared compiler cache with path remapping and a fixed workdir so cache keys match across\n     machines; incremental compilation off in CI (`CARGO_INCREMENTAL=0`);\n   - a faster linker (mold or lld);\n   - a faster test runner (cargo-nextest) and change-scoped tests from `eng impact`;\n   - workspace-hack or dependency-layer caching (cargo-hakari, cargo-chef) where rebuilds dominate.\n4. Measure again under the same conditions. Record both numbers with the change\n   (`eng verify --cache-stats <json>` keeps cache statistics in evidence).\n5. Keep it only if it is faster and the gate still runs the same checks; otherwise revert.\n\n## Verification\n\n- Before and after numbers with run count, cold/warm state and machine are in the PR or evidence.\n- The required checks before and after are the same list.\n- Cache write access is limited to main-branch CI (show the credential scoping).\n\n## Failure and escalation\n\n- Faster but flaky: revert and investigate (`failure-investigator`).\n- Cache hit rate stays low: check keys (paths, toolchain, env, `RUSTFLAGS`) before adding capacity.\n- A speedup needs a gate change: stop and ask the owner; record it as a policy decision.\n\n## Done when\n\nThe change is merged with before/after numbers, the gate is unchanged, and the numbers are kept\nwhere the next improvement loop can read them.\n"
+    },
+    {
+      "id": "agent-sandboxing",
+      "name": "Agent sandboxing",
+      "description": "Run agents in isolated, least-privilege environments. Use when setting up where agents execute, giving an agent credentials or network access, running untrusted code or dependencies, sharing caches or artifacts between agents, or deciding who may approve releases and deploys.",
+      "activate": "Provisioning an execution environment for agents or sub-agents.",
+      "phase": "plan",
+      "risk": "high",
+      "tags": [
+        "isolation",
+        "credentials",
+        "egress"
+      ],
+      "order": 15,
+      "source_path": "skills/agent-sandboxing/SKILL.md",
+      "body_markdown": "# Agent sandboxing\n\nAssume an agent can be steered by what it reads. Contain what it can reach: isolated execution,\nshort-lived scoped credentials, a network allowlist, no production secrets, and a human at every\nrelease or deploy. The policy behind this skill is `references/trust.md`.\n\n## Activate when\n\n- Provisioning an execution environment for agents or sub-agents.\n- An agent needs a token, network access, a shared cache or an artifact store.\n- Running code, scripts or dependencies that have not been reviewed.\n\n## Inputs and assumptions\n\n- What the task needs to read, write and reach — and nothing more.\n- The secrets and systems that must stay out of reach (production, signing keys, billing).\n\n## Permissions and restrictions\n\n- One task runs in one isolated container or VM. Untrusted work (unreviewed dependencies, fetched\n  code, third-party PRs) gets stronger isolation, such as a user-space kernel or a microVM.\n- Credentials are per task, scoped to the minimum (one repository, read-only where possible) and\n  short-lived. No long-lived personal tokens inside an agent environment.\n- No production secrets in agent environments. Deploy and release credentials live in the release\n  pipeline behind human approval.\n- Network egress goes through an allowlist (package registries, the forge, the cache endpoint).\n- Shared caches and artifact stores are written only by trusted main-branch jobs; agents read\n  (see `build-performance`).\n- No agent approves its own release or deploy. A human gates both.\n\n## Workflow\n\n1. List what the task must access. Grant exactly that: repository, scopes, network hosts, duration.\n2. Start the task in a fresh sandbox from a pinned image or environment definition.\n3. Inject credentials at runtime; never write them to files that are committed, logged or uploaded.\n4. Keep dependency checks in the required gate: licence, advisories and unused dependencies\n   (for example cargo-deny, cargo-audit, cargo-machete in Rust).\n5. Tear down the sandbox and revoke the credentials when the task ends.\n\n## Verification\n\n- The sandbox definition, token scopes, expiry and egress allowlist are written down and reviewed.\n- A deliberately disallowed request (an unlisted host, a write to the cache from a PR job) fails.\n- Release and deploy jobs require a human approval step that agents cannot satisfy.\n\n## Failure and escalation\n\n- A task needs broader access: stop and ask the owner; do not widen the sandbox from inside it.\n- A secret appears in a log or artifact: stop, do not echo it, notify the owner and rotate it.\n- A cache or artifact may have been written by an untrusted job: treat it as poisoned, purge it and\n  rebuild from main.\n\n## Done when\n\nThe task ran with only the access it needed, credentials are revoked, and nothing it touched can\nreach production or a release without a human.\n",
+      "body_html": "<p>Assume an agent can be steered by what it reads. Contain what it can reach: isolated execution, short-lived scoped credentials, a network allowlist, no production secrets, and a human at every release or deploy. The policy behind this skill is <code>references/trust.md</code>.</p>\n<h2>Activate when</h2>\n<ul><li>Provisioning an execution environment for agents or sub-agents.</li><li>An agent needs a token, network access, a shared cache or an artifact store.</li><li>Running code, scripts or dependencies that have not been reviewed.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>What the task needs to read, write and reach — and nothing more.</li><li>The secrets and systems that must stay out of reach (production, signing keys, billing).</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>One task runs in one isolated container or VM. Untrusted work (unreviewed dependencies, fetched code, third-party PRs) gets stronger isolation, such as a user-space kernel or a microVM.</li><li>Credentials are per task, scoped to the minimum (one repository, read-only where possible) and short-lived. No long-lived personal tokens inside an agent environment.</li><li>No production secrets in agent environments. Deploy and release credentials live in the release pipeline behind human approval.</li><li>Network egress goes through an allowlist (package registries, the forge, the cache endpoint).</li><li>Shared caches and artifact stores are written only by trusted main-branch jobs; agents read (see <code>build-performance</code>).</li><li>No agent approves its own release or deploy. A human gates both.</li></ul>\n<h2>Workflow</h2>\n<ol><li>List what the task must access. Grant exactly that: repository, scopes, network hosts, duration.</li><li>Start the task in a fresh sandbox from a pinned image or environment definition.</li><li>Inject credentials at runtime; never write them to files that are committed, logged or uploaded.</li><li>Keep dependency checks in the required gate: licence, advisories and unused dependencies (for example cargo-deny, cargo-audit, cargo-machete in Rust).</li><li>Tear down the sandbox and revoke the credentials when the task ends.</li></ol>\n<h2>Verification</h2>\n<ul><li>The sandbox definition, token scopes, expiry and egress allowlist are written down and reviewed.</li><li>A deliberately disallowed request (an unlisted host, a write to the cache from a PR job) fails.</li><li>Release and deploy jobs require a human approval step that agents cannot satisfy.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>A task needs broader access: stop and ask the owner; do not widen the sandbox from inside it.</li><li>A secret appears in a log or artifact: stop, do not echo it, notify the owner and rotate it.</li><li>A cache or artifact may have been written by an untrusted job: treat it as poisoned, purge it and rebuild from main.</li></ul>\n<h2>Done when</h2>\n<p>The task ran with only the access it needed, credentials are revoked, and nothing it touched can reach production or a release without a human.</p>",
+      "raw_markdown": "---\nname: agent-sandboxing\ndescription: Run agents in isolated, least-privilege environments. Use when setting up where agents execute, giving an agent credentials or network access, running untrusted code or dependencies, sharing caches or artifacts between agents, or deciding who may approve releases and deploys.\n---\n\n# Agent sandboxing\n\nAssume an agent can be steered by what it reads. Contain what it can reach: isolated execution,\nshort-lived scoped credentials, a network allowlist, no production secrets, and a human at every\nrelease or deploy. The policy behind this skill is `references/trust.md`.\n\n## Activate when\n\n- Provisioning an execution environment for agents or sub-agents.\n- An agent needs a token, network access, a shared cache or an artifact store.\n- Running code, scripts or dependencies that have not been reviewed.\n\n## Inputs and assumptions\n\n- What the task needs to read, write and reach — and nothing more.\n- The secrets and systems that must stay out of reach (production, signing keys, billing).\n\n## Permissions and restrictions\n\n- One task runs in one isolated container or VM. Untrusted work (unreviewed dependencies, fetched\n  code, third-party PRs) gets stronger isolation, such as a user-space kernel or a microVM.\n- Credentials are per task, scoped to the minimum (one repository, read-only where possible) and\n  short-lived. No long-lived personal tokens inside an agent environment.\n- No production secrets in agent environments. Deploy and release credentials live in the release\n  pipeline behind human approval.\n- Network egress goes through an allowlist (package registries, the forge, the cache endpoint).\n- Shared caches and artifact stores are written only by trusted main-branch jobs; agents read\n  (see `build-performance`).\n- No agent approves its own release or deploy. A human gates both.\n\n## Workflow\n\n1. List what the task must access. Grant exactly that: repository, scopes, network hosts, duration.\n2. Start the task in a fresh sandbox from a pinned image or environment definition.\n3. Inject credentials at runtime; never write them to files that are committed, logged or uploaded.\n4. Keep dependency checks in the required gate: licence, advisories and unused dependencies\n   (for example cargo-deny, cargo-audit, cargo-machete in Rust).\n5. Tear down the sandbox and revoke the credentials when the task ends.\n\n## Verification\n\n- The sandbox definition, token scopes, expiry and egress allowlist are written down and reviewed.\n- A deliberately disallowed request (an unlisted host, a write to the cache from a PR job) fails.\n- Release and deploy jobs require a human approval step that agents cannot satisfy.\n\n## Failure and escalation\n\n- A task needs broader access: stop and ask the owner; do not widen the sandbox from inside it.\n- A secret appears in a log or artifact: stop, do not echo it, notify the owner and rotate it.\n- A cache or artifact may have been written by an untrusted job: treat it as poisoned, purge it and\n  rebuild from main.\n\n## Done when\n\nThe task ran with only the access it needed, credentials are revoked, and nothing it touched can\nreach production or a release without a human.\n"
+    },
+    {
+      "id": "autopilot-readiness",
+      "name": "Autopilot readiness",
+      "description": "Decide whether a repository can run with less human attention, and promote it one tier at a time. Use when proposing that agents merge or run a repository unattended, when reviewing a repository's controls before reducing supervision, or when an unattended repository misbehaves.",
+      "activate": "Someone proposes letting agents merge or work a repository without per-change review.",
+      "phase": "report",
+      "risk": "high",
+      "tags": [
+        "autonomy",
+        "tiers",
+        "checklist"
+      ],
+      "order": 16,
+      "source_path": "skills/autopilot-readiness/SKILL.md",
+      "body_markdown": "# Autopilot readiness\n\nSupervision is reduced one repository at a time, on evidence. Each tier has to hold for a week of\nrecorded evidence before the next repository is promoted.\n\n| Tier | Agents may | A human |\n| --- | --- | --- |\n| Attended | Propose changes and run checks | Reviews and merges every change |\n| Supervised autopilot | Merge changes that pass the required gate through a merge queue | Reviews the daily `eng digest`, owns exceptions, approves releases and deploys |\n| Autopilot | Plan, build, verify independently and merge within budget | Handles exceptions the digest raises, approves releases and deploys |\n\nNo tier lets an agent release or deploy without a human.\n\n## Activate when\n\n- Someone proposes letting agents merge or work a repository without per-change review.\n- A promoted repository has a failure, a revert or an overspend.\n\n## Inputs and assumptions\n\n- The repository's `AGENTS.md`, CI, required checks and recent evidence records.\n- A named human who owns exceptions for this repository.\n\n## Permissions and restrictions\n\n- Promotion is the owner's decision. This skill produces the evidence; it does not promote.\n- Never relax a required check to qualify for a tier.\n\n## Workflow\n\n1. Check every item; each needs a link or a command result, not a claim:\n   - Reproducible environment (pinned toolchain, lockfiles, documented setup).\n   - `./.agents/bin/eng verify --profile full` passes on the main branch.\n   - Tiered CI: `fast`, `full` and, where the code needs it, `nightly` (`verification-tiers`).\n   - A merge queue or auto-merge that requires the gate.\n   - A tested rollback path (revert, flag or redeploy of the previous version).\n   - A spend cap (`budget.cost_cap`) and recorded cost per run.\n   - Alerting: `eng digest` (or equivalent) delivered daily to the named human.\n   - Independent verification for the required gate (`independent-verification`).\n   - A named human for exceptions.\n2. Record the result as a checklist with evidence links in the repository's work item.\n3. If every item holds, propose the next tier to the owner. Promote one repository at a time.\n4. After promotion, collect a week of evidence: merged changes, digest items, reverts, cost.\n5. Demote on a failed rollback, an unexplained revert, an overspend or an ignored digest item.\n\n## Verification\n\n- The checklist has evidence for every item; a missing item means the tier is not met.\n- The week after promotion shows no unhandled digest items and no gate weakened.\n\n## Failure and escalation\n\n- An unattended change breaks main: revert first, demote to the previous tier, then investigate.\n- The digest is not being read: demote; unattended work without attention is not autopilot.\n\n## Done when\n\nThe owner has a checklist with evidence, a tier decision, and — after a promotion — a week of\nevidence that the tier holds.\n",
+      "body_html": "<p>Supervision is reduced one repository at a time, on evidence. Each tier has to hold for a week of recorded evidence before the next repository is promoted.</p>\n<p>| Tier | Agents may | A human | | --- | --- | --- | | Attended | Propose changes and run checks | Reviews and merges every change | | Supervised autopilot | Merge changes that pass the required gate through a merge queue | Reviews the daily <code>eng digest</code>, owns exceptions, approves releases and deploys | | Autopilot | Plan, build, verify independently and merge within budget | Handles exceptions the digest raises, approves releases and deploys |</p>\n<p>No tier lets an agent release or deploy without a human.</p>\n<h2>Activate when</h2>\n<ul><li>Someone proposes letting agents merge or work a repository without per-change review.</li><li>A promoted repository has a failure, a revert or an overspend.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>The repository's <code>AGENTS.md</code>, CI, required checks and recent evidence records.</li><li>A named human who owns exceptions for this repository.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>Promotion is the owner's decision. This skill produces the evidence; it does not promote.</li><li>Never relax a required check to qualify for a tier.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Check every item; each needs a link or a command result, not a claim:</li></ol>\n<ul><li>Reproducible environment (pinned toolchain, lockfiles, documented setup).</li><li><code>./.agents/bin/eng verify --profile full</code> passes on the main branch.</li><li>Tiered CI: <code>fast</code>, <code>full</code> and, where the code needs it, <code>nightly</code> (<code>verification-tiers</code>).</li><li>A merge queue or auto-merge that requires the gate.</li><li>A tested rollback path (revert, flag or redeploy of the previous version).</li><li>A spend cap (<code>budget.cost_cap</code>) and recorded cost per run.</li><li>Alerting: <code>eng digest</code> (or equivalent) delivered daily to the named human.</li><li>Independent verification for the required gate (<code>independent-verification</code>).</li><li>A named human for exceptions.</li></ul>\n<ol start=\"2\"><li>Record the result as a checklist with evidence links in the repository's work item.</li><li>If every item holds, propose the next tier to the owner. Promote one repository at a time.</li><li>After promotion, collect a week of evidence: merged changes, digest items, reverts, cost.</li><li>Demote on a failed rollback, an unexplained revert, an overspend or an ignored digest item.</li></ol>\n<h2>Verification</h2>\n<ul><li>The checklist has evidence for every item; a missing item means the tier is not met.</li><li>The week after promotion shows no unhandled digest items and no gate weakened.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>An unattended change breaks main: revert first, demote to the previous tier, then investigate.</li><li>The digest is not being read: demote; unattended work without attention is not autopilot.</li></ul>\n<h2>Done when</h2>\n<p>The owner has a checklist with evidence, a tier decision, and — after a promotion — a week of evidence that the tier holds.</p>",
+      "raw_markdown": "---\nname: autopilot-readiness\ndescription: Decide whether a repository can run with less human attention, and promote it one tier at a time. Use when proposing that agents merge or run a repository unattended, when reviewing a repository's controls before reducing supervision, or when an unattended repository misbehaves.\n---\n\n# Autopilot readiness\n\nSupervision is reduced one repository at a time, on evidence. Each tier has to hold for a week of\nrecorded evidence before the next repository is promoted.\n\n| Tier | Agents may | A human |\n| --- | --- | --- |\n| Attended | Propose changes and run checks | Reviews and merges every change |\n| Supervised autopilot | Merge changes that pass the required gate through a merge queue | Reviews the daily `eng digest`, owns exceptions, approves releases and deploys |\n| Autopilot | Plan, build, verify independently and merge within budget | Handles exceptions the digest raises, approves releases and deploys |\n\nNo tier lets an agent release or deploy without a human.\n\n## Activate when\n\n- Someone proposes letting agents merge or work a repository without per-change review.\n- A promoted repository has a failure, a revert or an overspend.\n\n## Inputs and assumptions\n\n- The repository's `AGENTS.md`, CI, required checks and recent evidence records.\n- A named human who owns exceptions for this repository.\n\n## Permissions and restrictions\n\n- Promotion is the owner's decision. This skill produces the evidence; it does not promote.\n- Never relax a required check to qualify for a tier.\n\n## Workflow\n\n1. Check every item; each needs a link or a command result, not a claim:\n   - Reproducible environment (pinned toolchain, lockfiles, documented setup).\n   - `./.agents/bin/eng verify --profile full` passes on the main branch.\n   - Tiered CI: `fast`, `full` and, where the code needs it, `nightly` (`verification-tiers`).\n   - A merge queue or auto-merge that requires the gate.\n   - A tested rollback path (revert, flag or redeploy of the previous version).\n   - A spend cap (`budget.cost_cap`) and recorded cost per run.\n   - Alerting: `eng digest` (or equivalent) delivered daily to the named human.\n   - Independent verification for the required gate (`independent-verification`).\n   - A named human for exceptions.\n2. Record the result as a checklist with evidence links in the repository's work item.\n3. If every item holds, propose the next tier to the owner. Promote one repository at a time.\n4. After promotion, collect a week of evidence: merged changes, digest items, reverts, cost.\n5. Demote on a failed rollback, an unexplained revert, an overspend or an ignored digest item.\n\n## Verification\n\n- The checklist has evidence for every item; a missing item means the tier is not met.\n- The week after promotion shows no unhandled digest items and no gate weakened.\n\n## Failure and escalation\n\n- An unattended change breaks main: revert first, demote to the previous tier, then investigate.\n- The digest is not being read: demote; unattended work without attention is not autopilot.\n\n## Done when\n\nThe owner has a checklist with evidence, a tier decision, and — after a promotion — a week of\nevidence that the tier holds.\n"
+    },
+    {
+      "id": "improvement-loop",
+      "name": "Improvement loop",
+      "description": "Improve the delivery system weekly from evidence — pick the single worst bottleneck, change one thing, measure, keep or revert. Use for the weekly engineering review, for proposing a process or tooling change, and for any change to Creed itself.",
+      "activate": "The weekly review is due.",
+      "phase": "report",
+      "risk": "low",
+      "tags": [
+        "metrics",
+        "weekly",
+        "bottleneck"
+      ],
+      "order": 17,
+      "source_path": "skills/improvement-loop/SKILL.md",
+      "body_markdown": "# Improvement loop\n\nOnce a week, read the numbers, pick the single worst bottleneck, change one thing, and measure it the\nnext week. Keep the change if the number moved and the evidence level held; revert it if not.\nMetric definitions live in `references/metrics.md`.\n\n## Activate when\n\n- The weekly review is due.\n- Someone proposes a process, tooling or policy change \"to go faster\".\n- A change to Creed itself (skills, profiles, rules, tools) is proposed.\n\n## Inputs and assumptions\n\n- Evidence records and the forge history for the week.\n- Last week's numbers and the change that was made.\n\n## Permissions and restrictions\n\n- One change per loop, so its effect can be attributed.\n- A change that lowers the evidence level (fewer or narrower required checks) is rejected, whatever\n  it saves.\n- Changes to required gates or repository policy need the owner's approval.\n\n## Workflow\n\n1. Compute the metrics for the week with the same script and definitions as last week. Note any\n   metric without data as unknown.\n2. Judge last week's change: did its target metric move beyond normal variance, and did the evidence\n   level hold? Keep or revert, and record why.\n3. Read `eng digest` and the worst metric. Pick the single largest bottleneck.\n4. Propose one change with its expected effect, how it will be measured, and its rollback.\n5. Make the change as an ordinary task (work item, worktree, PR, evidence).\n6. Record the before value now; the after value is next week's step 2.\n\n## Verification\n\n- Each loop leaves a short record: metrics, the bottleneck chosen, the change, before and after\n  numbers, keep or revert.\n- A Creed change carries its before/after numbers in its pull request.\n\n## Failure and escalation\n\n- The data is missing or too small to judge: say so and extend the measurement; do not guess.\n- Two changes landed in one week: attribute nothing; separate them next week.\n- A bottleneck needs a gate or policy change: bring it to the owner as a decision, with numbers.\n\n## Done when\n\nThe week's record exists, last week's change is kept or reverted on evidence, and exactly one new\nchange is in flight with its before number recorded.\n",
+      "body_html": "<p>Once a week, read the numbers, pick the single worst bottleneck, change one thing, and measure it the next week. Keep the change if the number moved and the evidence level held; revert it if not. Metric definitions live in <code>references/metrics.md</code>.</p>\n<h2>Activate when</h2>\n<ul><li>The weekly review is due.</li><li>Someone proposes a process, tooling or policy change \"to go faster\".</li><li>A change to Creed itself (skills, profiles, rules, tools) is proposed.</li></ul>\n<h2>Inputs and assumptions</h2>\n<ul><li>Evidence records and the forge history for the week.</li><li>Last week's numbers and the change that was made.</li></ul>\n<h2>Permissions and restrictions</h2>\n<ul><li>One change per loop, so its effect can be attributed.</li><li>A change that lowers the evidence level (fewer or narrower required checks) is rejected, whatever it saves.</li><li>Changes to required gates or repository policy need the owner's approval.</li></ul>\n<h2>Workflow</h2>\n<ol><li>Compute the metrics for the week with the same script and definitions as last week. Note any metric without data as unknown.</li><li>Judge last week's change: did its target metric move beyond normal variance, and did the evidence level hold? Keep or revert, and record why.</li><li>Read <code>eng digest</code> and the worst metric. Pick the single largest bottleneck.</li><li>Propose one change with its expected effect, how it will be measured, and its rollback.</li><li>Make the change as an ordinary task (work item, worktree, PR, evidence).</li><li>Record the before value now; the after value is next week's step 2.</li></ol>\n<h2>Verification</h2>\n<ul><li>Each loop leaves a short record: metrics, the bottleneck chosen, the change, before and after numbers, keep or revert.</li><li>A Creed change carries its before/after numbers in its pull request.</li></ul>\n<h2>Failure and escalation</h2>\n<ul><li>The data is missing or too small to judge: say so and extend the measurement; do not guess.</li><li>Two changes landed in one week: attribute nothing; separate them next week.</li><li>A bottleneck needs a gate or policy change: bring it to the owner as a decision, with numbers.</li></ul>\n<h2>Done when</h2>\n<p>The week's record exists, last week's change is kept or reverted on evidence, and exactly one new change is in flight with its before number recorded.</p>",
+      "raw_markdown": "---\nname: improvement-loop\ndescription: Improve the delivery system weekly from evidence — pick the single worst bottleneck, change one thing, measure, keep or revert. Use for the weekly engineering review, for proposing a process or tooling change, and for any change to Creed itself.\n---\n\n# Improvement loop\n\nOnce a week, read the numbers, pick the single worst bottleneck, change one thing, and measure it the\nnext week. Keep the change if the number moved and the evidence level held; revert it if not.\nMetric definitions live in `references/metrics.md`.\n\n## Activate when\n\n- The weekly review is due.\n- Someone proposes a process, tooling or policy change \"to go faster\".\n- A change to Creed itself (skills, profiles, rules, tools) is proposed.\n\n## Inputs and assumptions\n\n- Evidence records and the forge history for the week.\n- Last week's numbers and the change that was made.\n\n## Permissions and restrictions\n\n- One change per loop, so its effect can be attributed.\n- A change that lowers the evidence level (fewer or narrower required checks) is rejected, whatever\n  it saves.\n- Changes to required gates or repository policy need the owner's approval.\n\n## Workflow\n\n1. Compute the metrics for the week with the same script and definitions as last week. Note any\n   metric without data as unknown.\n2. Judge last week's change: did its target metric move beyond normal variance, and did the evidence\n   level hold? Keep or revert, and record why.\n3. Read `eng digest` and the worst metric. Pick the single largest bottleneck.\n4. Propose one change with its expected effect, how it will be measured, and its rollback.\n5. Make the change as an ordinary task (work item, worktree, PR, evidence).\n6. Record the before value now; the after value is next week's step 2.\n\n## Verification\n\n- Each loop leaves a short record: metrics, the bottleneck chosen, the change, before and after\n  numbers, keep or revert.\n- A Creed change carries its before/after numbers in its pull request.\n\n## Failure and escalation\n\n- The data is missing or too small to judge: say so and extend the measurement; do not guess.\n- Two changes landed in one week: attribute nothing; separate them next week.\n- A bottleneck needs a gate or policy change: bring it to the owner as a decision, with numbers.\n\n## Done when\n\nThe week's record exists, last week's change is kept or reverted on evidence, and exactly one new\nchange is in flight with its before number recorded.\n"
     }
   ],
   "tools": [
@@ -474,7 +637,8 @@
       "tags": [
         "search",
         "context"
-      ]
+      ],
+      "failure_mode": "Finds text, not meaning: misses dynamic references, macros and generated code."
     },
     {
       "id": "git-grep",
@@ -490,7 +654,8 @@
       "tags": [
         "search",
         "fallback"
-      ]
+      ],
+      "failure_mode": "Same textual limits as ripgrep; untracked files are invisible to it."
     },
     {
       "id": "lsp",
@@ -507,7 +672,8 @@
         "lsp",
         "symbols",
         "diagnostics"
-      ]
+      ],
+      "failure_mode": "Only as good as the project's build configuration; a stale index or failing build gives wrong answers."
     },
     {
       "id": "cargo-metadata",
@@ -523,7 +689,8 @@
       "tags": [
         "rust",
         "build-graph"
-      ]
+      ],
+      "failure_mode": "Describes the declared graph, not feature-gated or build-script-generated code paths."
     },
     {
       "id": "ast-grep",
@@ -539,7 +706,8 @@
       "tags": [
         "ast",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Rules match syntax, not types; a pattern can silently miss variants."
     },
     {
       "id": "tree-sitter",
@@ -555,7 +723,8 @@
       "tags": [
         "ast",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Grammars lag language releases; parse errors degrade to partial trees."
     },
     {
       "id": "scip",
@@ -571,7 +740,8 @@
       "tags": [
         "index",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Indexes go stale between builds; a stale index reports outdated references."
     },
     {
       "id": "cargo-test",
@@ -587,7 +757,8 @@
       "tags": [
         "rust",
         "tests"
-      ]
+      ],
+      "failure_mode": "Proves only what the tests assert; feature flags and targets not built are not tested."
     },
     {
       "id": "pytest",
@@ -603,7 +774,8 @@
       "tags": [
         "python",
         "tests"
-      ]
+      ],
+      "failure_mode": "Fixtures and monkeypatching can hide real integration failures."
     },
     {
       "id": "node-test",
@@ -620,7 +792,8 @@
         "javascript",
         "typescript",
         "tests"
-      ]
+      ],
+      "failure_mode": "Mocks and test environments (jsdom) differ from real runtimes."
     },
     {
       "id": "swift-test",
@@ -636,7 +809,8 @@
       "tags": [
         "swift",
         "tests"
-      ]
+      ],
+      "failure_mode": "Simulator and host differ from devices; UI behaviour needs separate tests."
     },
     {
       "id": "gradle-test",
@@ -654,11 +828,12 @@
         "java",
         "android",
         "tests"
-      ]
+      ],
+      "failure_mode": "Robolectric and emulators differ from devices; instrumentation tests can be flaky."
     },
     {
       "id": "proptest",
-      "name": "Property-based testing",
+      "name": "Property-based testing (proptest)",
       "category": "verification",
       "status": "conditional",
       "summary": "Generate inputs from invariants instead of enumerating examples.",
@@ -670,11 +845,14 @@
       "tags": [
         "property",
         "rust"
-      ]
+      ],
+      "failure_mode": "Generators can miss the interesting region; an unpinned seed makes failures hard to reproduce.",
+      "version": "1.12.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "fuzzing",
-      "name": "Fuzzing",
+      "name": "Fuzzing (cargo-fuzz)",
       "category": "verification",
       "status": "conditional",
       "summary": "Coverage-guided input exploration for parsers and binary formats.",
@@ -686,27 +864,33 @@
       "tags": [
         "fuzz",
         "parsers"
-      ]
+      ],
+      "failure_mode": "Finds only what the harness reaches; no crashes in a short run is weak evidence.",
+      "version": "cargo-fuzz 0.13.2",
+      "checked": "2026-11-02"
     },
     {
       "id": "mutation",
-      "name": "Mutation testing",
+      "name": "Mutation testing (cargo-mutants)",
       "category": "verification",
       "status": "candidate",
       "summary": "Test the tests by mutating production code.",
       "why": "Useful evidence that a test suite detects faults; expensive and language-specific, so run it on critical modules rather than every commit.",
-      "command": "cargo mutants / stryker / mutmut",
+      "command": "cargo mutants --in-diff <diff> / stryker / mutmut",
       "install": "per language",
       "license": "MIT / Apache-2.0",
-      "docs": "https://mutmut.readthedocs.io/",
+      "docs": "https://mutants.rs/",
       "tags": [
         "mutation",
         "coverage"
-      ]
+      ],
+      "failure_mode": "Slow, and surviving equivalent mutants create noise; easy to misread as a coverage score.",
+      "version": "cargo-mutants 27.1.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "golden",
-      "name": "Golden and snapshot tests",
+      "name": "Golden and snapshot tests (insta)",
       "category": "verification",
       "status": "conditional",
       "summary": "Freeze serialized output, CLI text, rendering and formats.",
@@ -718,7 +902,10 @@
       "tags": [
         "golden",
         "contracts"
-      ]
+      ],
+      "failure_mode": "Regenerating goldens to make a red test green turns them into rubber stamps.",
+      "version": "insta 1.49.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "contract-tests",
@@ -734,7 +921,8 @@
       "tags": [
         "contracts",
         "compatibility"
-      ]
+      ],
+      "failure_mode": "Fixtures cover the cases someone thought of; real consumers may rely on others."
     },
     {
       "id": "gitleaks",
@@ -750,7 +938,8 @@
       "tags": [
         "secrets",
         "supply-chain"
-      ]
+      ],
+      "failure_mode": "Pattern-based: misses novel secret formats and flags fake ones; untracked files are not scanned."
     },
     {
       "id": "semgrep",
@@ -766,7 +955,8 @@
       "tags": [
         "sast",
         "rules"
-      ]
+      ],
+      "failure_mode": "Only the rules configured; a clean run means those rules found nothing."
     },
     {
       "id": "osv",
@@ -782,7 +972,8 @@
       "tags": [
         "dependencies",
         "advisories"
-      ]
+      ],
+      "failure_mode": "Needs network and a supported lockfile; advisories lag disclosure."
     },
     {
       "id": "actionlint",
@@ -798,7 +989,8 @@
       "tags": [
         "ci",
         "workflows"
-      ]
+      ],
+      "failure_mode": "Checks syntax and shell, not whether a workflow is safe to run on untrusted input."
     },
     {
       "id": "zizmor",
@@ -815,7 +1007,8 @@
         "ci",
         "workflows",
         "injection"
-      ]
+      ],
+      "failure_mode": "Static audit of workflow files; cannot see repository settings or secrets scoping."
     },
     {
       "id": "codeql",
@@ -832,7 +1025,8 @@
         "sast",
         "deep",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Slow and heavy; query coverage varies by language, and alerts need triage."
     },
     {
       "id": "trivy",
@@ -849,7 +1043,8 @@
         "images",
         "sbom",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Database freshness and noise; image scans miss what is fetched at runtime."
     },
     {
       "id": "cosign",
@@ -865,7 +1060,8 @@
       "tags": [
         "signing",
         "provenance"
-      ]
+      ],
+      "failure_mode": "A signature proves who signed, not that the artifact is safe; key or identity mistakes break trust."
     },
     {
       "id": "worktrees",
@@ -881,7 +1077,8 @@
       "tags": [
         "isolation",
         "parallel"
-      ]
+      ],
+      "failure_mode": "Isolate files, not shared caches, ports, databases or devices."
     },
     {
       "id": "eng",
@@ -897,7 +1094,8 @@
       "tags": [
         "control-plane",
         "evidence"
-      ]
+      ],
+      "failure_mode": "Runs what the config says; a weak config gives a green gate that proves little."
     },
     {
       "id": "github-actions",
@@ -913,7 +1111,8 @@
       "tags": [
         "ci",
         "gates"
-      ]
+      ],
+      "failure_mode": "A pull request runs its own copy of the workflow, so CI cannot vouch for changes to CI."
     },
     {
       "id": "containers",
@@ -929,23 +1128,27 @@
       "tags": [
         "reproducibility",
         "isolation"
-      ]
+      ],
+      "failure_mode": "Image drift and unpinned bases break reproducibility; containers are not a strong security boundary on their own."
     },
     {
       "id": "sccache",
-      "name": "sccache / R2",
+      "name": "sccache (S3-compatible)",
       "category": "execution",
       "status": "conditional",
-      "summary": "Content-addressed build caching across runners.",
-      "why": "High value for large Rust workspaces. Requires a private bucket and credentials; never put them in the repository.",
-      "command": "SCCACHE_BUCKET=... sccache",
-      "install": "mozilla-actions/sccache-action",
+      "summary": "Shared compiler cache for Rust (and C/C++) across runners, on S3-compatible storage.",
+      "why": "High value for large Rust workspaces. Only main-branch CI gets write credentials; PR builds and agents read. Separate prefixes per project and toolchain; never put credentials in the repository.",
+      "command": "sccache --show-stats --stats-format json",
+      "install": "cargo install sccache (or a pinned CI action)",
       "license": "Apache-2.0",
       "docs": "https://github.com/mozilla/sccache",
       "tags": [
         "cache",
         "rust"
-      ]
+      ],
+      "failure_mode": "A poisoned or mismatched cache returns wrong artifacts; key mismatches (paths, flags, toolchain) give near-zero hit rates.",
+      "version": "0.19.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "evidence",
@@ -961,7 +1164,8 @@
       "tags": [
         "audit",
         "metrics"
-      ]
+      ],
+      "failure_mode": "Local and unsigned: proves integrity of the chain, not who produced it."
     },
     {
       "id": "artifacts",
@@ -977,7 +1181,8 @@
       "tags": [
         "retention",
         "audit"
-      ]
+      ],
+      "failure_mode": "Retention expires; artifacts are only as trustworthy as the job that uploaded them."
     },
     {
       "id": "otel",
@@ -994,7 +1199,10 @@
         "metrics",
         "traces",
         "candidate"
-      ]
+      ],
+      "failure_mode": "Instrumentation without a consumer is cost without value; traces can leak sensitive data.",
+      "version": "Collector 0.164.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "agent-eval",
@@ -1010,7 +1218,8 @@
       "tags": [
         "evaluation",
         "agents"
-      ]
+      ],
+      "failure_mode": "Two smoke tasks: detects gross regressions, not model quality."
     },
     {
       "id": "agents-md",
@@ -1026,14 +1235,15 @@
       "tags": [
         "policy",
         "discovery"
-      ]
+      ],
+      "failure_mode": "Stale policy misleads agents; it is guidance, not enforcement."
     },
     {
       "id": "skills",
       "name": "Agent Skills",
       "category": "context",
       "status": "adopted",
-      "summary": "Ten task-specific entrypoints with workflows and completion criteria.",
+      "summary": "Seventeen task-specific entrypoints with workflows and completion criteria.",
       "why": "Load one skill for the task instead of injecting every instruction into every context.",
       "command": "read .agents/skills/<name>/SKILL.md",
       "install": "included in kit",
@@ -1042,7 +1252,8 @@
       "tags": [
         "skills",
         "context"
-      ]
+      ],
+      "failure_mode": "Text, not enforcement: an agent can ignore a skill; the gate still has to catch it."
     },
     {
       "id": "adr",
@@ -1058,7 +1269,8 @@
       "tags": [
         "decisions",
         "docs"
-      ]
+      ],
+      "failure_mode": "Decisions rot if not linked to code and revisited."
     },
     {
       "id": "opencode",
@@ -1074,7 +1286,8 @@
       "tags": [
         "harness",
         "executor"
-      ]
+      ],
+      "failure_mode": "Executor behaviour changes between versions; its permissions must be configured, not assumed."
     },
     {
       "id": "codex",
@@ -1090,7 +1303,8 @@
       "tags": [
         "harness",
         "executor"
-      ]
+      ],
+      "failure_mode": "Executor behaviour changes between versions; sandbox and approval settings vary by environment."
     },
     {
       "id": "claude-code",
@@ -1106,7 +1320,8 @@
       "tags": [
         "harness",
         "executor"
-      ]
+      ],
+      "failure_mode": "Executor behaviour changes between versions; permission modes must be set deliberately."
     },
     {
       "id": "autobot",
@@ -1122,7 +1337,8 @@
       "tags": [
         "harness",
         "control-plane"
-      ]
+      ],
+      "failure_mode": "Local agent in development; receipts are only as complete as the instrumentation."
     },
     {
       "id": "invincible",
@@ -1139,7 +1355,8 @@
         "models",
         "policy",
         "audit"
-      ]
+      ],
+      "failure_mode": "Gateway in development; a misconfigured policy can pass or block more than intended."
     },
     {
       "id": "litellm",
@@ -1155,7 +1372,8 @@
       "tags": [
         "models",
         "routing"
-      ]
+      ],
+      "failure_mode": "Another service to run and secure; routing errors can send data to the wrong provider."
     },
     {
       "id": "github",
@@ -1172,7 +1390,8 @@
         "git",
         "ci",
         "review"
-      ]
+      ],
+      "failure_mode": "Platform outages and rate limits; API tokens are high-value credentials."
     },
     {
       "id": "plane",
@@ -1188,7 +1407,8 @@
       "tags": [
         "planning",
         "tracking"
-      ]
+      ],
+      "failure_mode": "Tracking drifts from reality unless items are updated when work lands."
     },
     {
       "id": "pencil",
@@ -1204,7 +1424,470 @@
       "tags": [
         "design",
         "ui"
-      ]
+      ],
+      "failure_mode": "Design files drift from shipped UI without a review step."
+    },
+    {
+      "id": "cargo-nextest",
+      "name": "cargo-nextest",
+      "category": "build",
+      "status": "conditional",
+      "summary": "Faster Rust test runner: per-test processes, retries reported, JUnit output.",
+      "why": "Usually faster than cargo test on large workspaces. Does not run doctests; keep `cargo test --doc` in the gate.",
+      "command": "cargo nextest run --locked",
+      "install": "cargo install cargo-nextest --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://nexte.st/",
+      "tags": [
+        "rust",
+        "tests",
+        "speed"
+      ],
+      "failure_mode": "Skips doctests unless run separately; retries can hide flakes if they are treated as passes.",
+      "version": "0.9.150",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "fast-linker",
+      "name": "mold or lld",
+      "category": "build",
+      "status": "conditional",
+      "summary": "A faster linker for large Rust binaries.",
+      "why": "Linking often dominates incremental Rust builds. Measure with and without; mold is Linux-focused, lld is cross-platform.",
+      "command": "RUSTFLAGS='-C link-arg=-fuse-ld=mold' cargo build",
+      "install": "package manager",
+      "license": "MIT (mold) / Apache-2.0 with LLVM exception (lld)",
+      "docs": "https://github.com/rui314/mold",
+      "tags": [
+        "rust",
+        "linker",
+        "speed"
+      ],
+      "failure_mode": "Platform-specific flags; a linker difference can surface as an obscure link error or a different binary layout.",
+      "version": "mold 3.0.0 / LLVM lld 23.1.4",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-hakari",
+      "name": "cargo-hakari",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Workspace-hack crate so feature unification stops causing rebuilds.",
+      "why": "Helps large workspaces whose crates rebuild because features differ between builds. Adds a generated crate to maintain.",
+      "command": "cargo hakari generate && cargo hakari verify",
+      "install": "cargo install cargo-hakari --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://docs.rs/cargo-hakari",
+      "tags": [
+        "rust",
+        "workspace",
+        "speed"
+      ],
+      "failure_mode": "A stale workspace-hack causes surprising rebuilds or feature changes; it must be verified in CI.",
+      "version": "0.9.39",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-chef",
+      "name": "cargo-chef",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Caches Rust dependency builds as a container layer.",
+      "why": "Useful when CI builds in Docker and dependency compilation dominates. Not needed with a working compiler cache.",
+      "command": "cargo chef prepare --recipe-path recipe.json && cargo chef cook --release --recipe-path recipe.json",
+      "install": "cargo install cargo-chef --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://github.com/LukeMathWalker/cargo-chef",
+      "tags": [
+        "rust",
+        "docker",
+        "cache"
+      ],
+      "failure_mode": "Only helps container builds; a recipe out of sync with the lockfile caches the wrong dependencies.",
+      "version": "0.1.78",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "bacon",
+      "name": "bacon",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Background checker for the local Rust inner loop.",
+      "why": "Keeps check/clippy/test feedback running while editing. A developer convenience, not evidence: results are not recorded.",
+      "command": "bacon clippy",
+      "install": "cargo install bacon --locked",
+      "license": "AGPL-3.0",
+      "docs": "https://dystroy.org/bacon/",
+      "tags": [
+        "rust",
+        "inner-loop"
+      ],
+      "failure_mode": "Its output is not evidence; a green bacon pane is not a verified gate.",
+      "version": "3.26.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-deny",
+      "name": "cargo-deny",
+      "category": "security",
+      "status": "conditional",
+      "summary": "Licence, advisory, source and duplicate-version checks for Rust dependencies.",
+      "why": "Belongs in the required gate of Rust repositories with a reviewed deny.toml. Exceptions are narrow and dated.",
+      "command": "cargo deny check",
+      "install": "cargo install cargo-deny --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://embarkstudios.github.io/cargo-deny/",
+      "tags": [
+        "rust",
+        "dependencies",
+        "licence"
+      ],
+      "failure_mode": "A permissive deny.toml or broad exceptions make it pass without checking; needs the advisory database (network).",
+      "version": "0.20.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-audit",
+      "name": "cargo-audit",
+      "category": "security",
+      "status": "conditional",
+      "summary": "RustSec advisory scan of Cargo.lock.",
+      "why": "Overlaps with cargo-deny advisories and OSV; use one consistently and keep it in the required gate.",
+      "command": "cargo audit",
+      "install": "cargo install cargo-audit --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://rustsec.org/",
+      "tags": [
+        "rust",
+        "advisories"
+      ],
+      "failure_mode": "Advisories lag disclosure; ignored IDs must carry a reason and an expiry.",
+      "version": "0.22.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-machete",
+      "name": "cargo-machete",
+      "category": "verification",
+      "status": "conditional",
+      "summary": "Finds unused dependencies in Cargo.toml.",
+      "why": "Fast and dependency-free; unused dependencies cost build time and attack surface.",
+      "command": "cargo machete",
+      "install": "cargo install cargo-machete --locked",
+      "license": "MIT",
+      "docs": "https://github.com/bnjbvr/cargo-machete",
+      "tags": [
+        "rust",
+        "dependencies"
+      ],
+      "failure_mode": "Text-based: false positives for dependencies used only through macros or build scripts.",
+      "version": "0.9.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-llvm-cov",
+      "name": "cargo-llvm-cov",
+      "category": "verification",
+      "status": "conditional",
+      "summary": "Source-based code coverage for Rust tests.",
+      "why": "Shows untested code paths in a change. Coverage is a map of what ran, not a quality score.",
+      "command": "cargo llvm-cov --workspace --lcov --output-path lcov.info",
+      "install": "cargo install cargo-llvm-cov --locked",
+      "license": "Apache-2.0 / MIT",
+      "docs": "https://github.com/taiki-e/cargo-llvm-cov",
+      "tags": [
+        "rust",
+        "coverage"
+      ],
+      "failure_mode": "High coverage with weak assertions proves little; instrumented builds are slower and can change timing.",
+      "version": "0.9.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "nix-devenv",
+      "name": "Nix / devenv",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "Declarative, pinned development and CI environments.",
+      "why": "Makes 'works on my machine' reproducible across agents and runners. Steep learning curve; adopt when environment drift is a measured problem.",
+      "command": "devenv shell / nix develop",
+      "install": "https://nixos.org/download",
+      "license": "LGPL-2.1 (Nix) / Apache-2.0 (devenv)",
+      "docs": "https://devenv.sh/",
+      "tags": [
+        "environment",
+        "pinning"
+      ],
+      "failure_mode": "Complexity and evaluation time; macOS support differs from Linux.",
+      "version": "Nix 2.35.4 / devenv 2.4.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "mise",
+      "name": "mise",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "Pinned tool versions per repository (toolchains, CLIs).",
+      "why": "Lighter than Nix for pinning tool versions; does not pin system libraries.",
+      "command": "mise install && mise exec -- <cmd>",
+      "install": "https://mise.jdx.dev/",
+      "license": "MIT",
+      "docs": "https://mise.jdx.dev/",
+      "tags": [
+        "environment",
+        "versions"
+      ],
+      "failure_mode": "Pins tools, not the OS or system libraries; plugins fetch from the network.",
+      "version": "2026.10.25",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "dagger",
+      "name": "Dagger",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "CI pipelines as code that run the same locally and in CI.",
+      "why": "Useful when pipelines must run identically on laptops, agents and CI. Adds an engine to run and secure.",
+      "command": "dagger call <function>",
+      "install": "https://docs.dagger.io/install",
+      "license": "Apache-2.0",
+      "docs": "https://dagger.io/",
+      "tags": [
+        "ci",
+        "pipelines"
+      ],
+      "failure_mode": "Another runtime in the trust path; engine caching needs the same poisoning care as build caches.",
+      "version": "0.21.11",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "gvisor",
+      "name": "gVisor",
+      "category": "isolation",
+      "status": "candidate",
+      "summary": "User-space kernel sandbox for containers running untrusted work.",
+      "why": "Stronger isolation than a plain container for agent tasks on untrusted code.",
+      "command": "docker run --runtime=runsc ...",
+      "install": "https://gvisor.dev/docs/user_guide/install/",
+      "license": "Apache-2.0",
+      "docs": "https://gvisor.dev/",
+      "tags": [
+        "sandbox",
+        "containers"
+      ],
+      "failure_mode": "Syscall compatibility gaps and performance overhead for I/O-heavy builds.",
+      "version": "release-20261026.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "firecracker",
+      "name": "Firecracker",
+      "category": "isolation",
+      "status": "candidate",
+      "summary": "MicroVMs for strong per-task isolation.",
+      "why": "VM-level isolation with fast start-up; suits running many untrusted agent tasks on one host.",
+      "command": "firecracker --api-sock <sock>",
+      "install": "https://github.com/firecracker-microvm/firecracker",
+      "license": "Apache-2.0",
+      "docs": "https://firecracker-microvm.github.io/",
+      "tags": [
+        "sandbox",
+        "vm"
+      ],
+      "failure_mode": "Linux/KVM only; image, network and storage plumbing is yours to build and secure.",
+      "version": "1.17.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "buck2-bazel",
+      "name": "Buck2 or Bazel (remote execution)",
+      "category": "scale",
+      "status": "candidate",
+      "summary": "Hermetic builds with remote caching and execution.",
+      "why": "Only worth it at a scale where Cargo plus a compiler cache is measurably not enough. Large migration cost.",
+      "command": "bazel build //... / buck2 build //...",
+      "install": "https://bazel.build/install",
+      "license": "Apache-2.0",
+      "docs": "https://bazel.build/",
+      "tags": [
+        "build",
+        "remote-execution"
+      ],
+      "failure_mode": "Migration cost and a second build definition that can drift from Cargo; hermeticity breaks quietly.",
+      "version": "Bazel 9.3.1; Buck2 publishes rolling releases",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "temporal",
+      "name": "Temporal",
+      "category": "scale",
+      "status": "candidate",
+      "summary": "Durable workflows for long-running, retryable agent orchestration.",
+      "why": "Consider when agent pipelines need durable retries and state across failures. A service to operate.",
+      "command": "temporal workflow start ...",
+      "install": "https://docs.temporal.io/",
+      "license": "MIT",
+      "docs": "https://temporal.io/",
+      "tags": [
+        "orchestration",
+        "durability"
+      ],
+      "failure_mode": "A stateful service to run, secure and upgrade; workflow code has determinism rules that are easy to break.",
+      "version": "1.32.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "langfuse",
+      "name": "Langfuse-style agent traces",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Traces of agent runs: prompts, tool calls, cost and latency.",
+      "why": "Helps find stalled or expensive agents. Traces contain prompts and code; treat them as confidential.",
+      "command": "LANGFUSE_HOST=... (SDK or OpenTelemetry export)",
+      "install": "self-hosted or cloud",
+      "license": "MIT (outside the ee/ directories)",
+      "docs": "https://langfuse.com/",
+      "tags": [
+        "agents",
+        "traces",
+        "cost"
+      ],
+      "failure_mode": "Traces can capture secrets and private code; another data store to secure and retain correctly.",
+      "version": "4.72.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "prometheus-grafana",
+      "name": "Prometheus / Grafana",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Metrics and dashboards for CI duration, queue depth, cache hit rate and cost.",
+      "why": "Adopt when the improvement loop needs trends that evidence files alone do not show.",
+      "command": "prometheus --config.file=prometheus.yml",
+      "install": "self-hosted",
+      "license": "Apache-2.0 (Prometheus) / AGPL-3.0 (Grafana)",
+      "docs": "https://prometheus.io/",
+      "tags": [
+        "metrics",
+        "dashboards"
+      ],
+      "failure_mode": "Dashboards nobody reads; metrics without definitions drift from references/metrics.md.",
+      "version": "Prometheus 3.15.1 / Grafana 13.3.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "push-notifications",
+      "name": "Push notifications for exceptions",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Deliver the exception digest to the human who owns it.",
+      "why": "Attention is scarce: push only `eng digest` items, never every pass.",
+      "command": "./.agents/bin/eng digest <repos> --json | <notifier>",
+      "install": "per channel",
+      "license": "n/a",
+      "docs": "https://github.com/WCKDai/agent-engineering",
+      "tags": [
+        "alerts",
+        "digest"
+      ],
+      "failure_mode": "Alert fatigue if it sends passes; silent failure if the notifier breaks, so a missing digest must itself be noticed.",
+      "version": "n/a",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "kicad-kibot",
+      "name": "KiCad with KiBot",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Schematic/PCB design with scripted ERC/DRC and fabrication outputs.",
+      "why": "Makes hardware design checks reproducible in CI. Not exercised in any WCKD repository with recorded evidence.",
+      "command": "kibot -c <config>.kibot.yaml",
+      "install": "https://www.kicad.org/download/",
+      "license": "GPL-3.0 (KiCad) / AGPL-3.0 (KiBot)",
+      "docs": "https://github.com/INTI-CMNB/KiBot",
+      "tags": [
+        "electronics",
+        "pcb"
+      ],
+      "failure_mode": "Rule checks only cover the rules configured; generated outputs must not be hand-edited.",
+      "version": "KiCad 10.0.7 / KiBot 1.9.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "ngspice",
+      "name": "ngspice",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Circuit simulation (SPICE).",
+      "why": "Checks power, sensing and driver circuits before fabrication. Results are only as good as the device models.",
+      "command": "ngspice -b <circuit>.cir",
+      "install": "package manager",
+      "license": "BSD-3-Clause (mostly)",
+      "docs": "https://ngspice.sourceforge.io/",
+      "tags": [
+        "electronics",
+        "simulation"
+      ],
+      "failure_mode": "Wrong or idealised models give confident wrong answers.",
+      "version": "47",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "renode-qemu",
+      "name": "Renode / QEMU",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Emulate microcontrollers and boards to test firmware without devices.",
+      "why": "Runs firmware tests in CI before a bench. Peripheral models are incomplete.",
+      "command": "renode <script>.resc / qemu-system-<arch>",
+      "install": "package manager",
+      "license": "MIT (Renode) / GPL-2.0 (QEMU)",
+      "docs": "https://renode.io/",
+      "tags": [
+        "firmware",
+        "emulation"
+      ],
+      "failure_mode": "Missing or inaccurate peripheral models; timing differs from hardware.",
+      "version": "Renode 1.17.0 / QEMU 11.1.3",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "mujoco",
+      "name": "MuJoCo",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Physics simulation for robot controllers.",
+      "why": "Tests gaits and controllers in simulation with fixed seeds before hardware.",
+      "command": "python -m <sim_test>",
+      "install": "pip install mujoco",
+      "license": "Apache-2.0",
+      "docs": "https://mujoco.org/",
+      "tags": [
+        "robotics",
+        "simulation"
+      ],
+      "failure_mode": "Sim-to-real gap: contact, friction and actuator models differ from the robot.",
+      "version": "3.17.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "hil-runner",
+      "name": "Hardware-in-the-loop runner",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "A self-hosted runner attached to real devices for bench tests.",
+      "why": "The last step after simulation and emulation. Needs safe test sequences and human approval for anything that can damage hardware.",
+      "command": "./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'",
+      "install": "self-hosted runner",
+      "license": "n/a",
+      "docs": "https://docs.github.com/actions/hosting-your-own-runners",
+      "tags": [
+        "hardware",
+        "runner"
+      ],
+      "failure_mode": "Untrusted code on a runner with physical devices; flaky hardware reported as passing.",
+      "version": "n/a",
+      "checked": "2026-11-02"
     }
   ],
   "paths": [
@@ -1700,6 +2383,299 @@
           "done": "The published digest matches the candidate; rollback is ready."
         }
       ]
+    },
+    {
+      "id": "parallel-agents",
+      "title": "Run many agents in parallel safely",
+      "glyph": "09",
+      "summary": "Many agents on many repositories: one task, one worktree, one sandbox, one PR, and a queue instead of collisions.",
+      "when": "Several agents or sub-agents work at once, share a build machine, or target the same branch.",
+      "steps": [
+        {
+          "title": "Write the ownership table",
+          "body": "List each task with its owner, owned paths, verification command and dependencies. No path has two owners; shared files go to one integration owner.",
+          "commands": [
+            "./.agents/bin/eng impact --base origin/main"
+          ],
+          "skills": [
+            "parallel-agent-work",
+            "change-impact"
+          ],
+          "done": "A table with no overlapping owned paths is recorded in the work item."
+        },
+        {
+          "title": "Set machine limits",
+          "body": "Cap concurrent worktrees and build jobs so extra work queues instead of contending. Isolate each task in its own sandbox with scoped, short-lived credentials.",
+          "commands": [
+            "./.agents/bin/eng worktree list",
+            "CARGO_BUILD_JOBS=<n> nice -n 10 <build>"
+          ],
+          "skills": [
+            "parallel-agent-work",
+            "agent-sandboxing"
+          ],
+          "done": "The cap, the sandbox definition and the token scopes are written down."
+        },
+        {
+          "title": "Start one worktree per task",
+          "body": "Each agent gets its own worktree, branch, scope, budget, stop conditions and handoff format.",
+          "commands": [
+            "./.agents/bin/eng worktree create <task> --owner <agent>"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ],
+          "done": "Every running agent maps to exactly one worktree with an owner record."
+        },
+        {
+          "title": "Verify each task on its own",
+          "body": "Baseline, implement, run the fast gate, then the full gate with the builder and an independent verifier recorded.",
+          "commands": [
+            "./.agents/bin/eng verify --profile fast",
+            "./.agents/bin/eng verify --profile full --builder <agent> --verifier <other>"
+          ],
+          "skills": [
+            "verification-tiers",
+            "independent-verification"
+          ],
+          "done": "Each task has full evidence on its own head, verified by a different identity."
+        },
+        {
+          "title": "Land through the queue",
+          "body": "Merge one change at a time through the merge queue or auto-merge with required checks. Update dependent branches and re-run their gate after each merge.",
+          "commands": [
+            "gh pr merge <n> --squash --auto"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ],
+          "done": "Main stays green; each merged revision has passing gate evidence."
+        },
+        {
+          "title": "Watch by exception",
+          "body": "Read the digest instead of every run. Clean up finished worktrees.",
+          "commands": [
+            "./.agents/bin/eng digest <repo>...",
+            "./.agents/bin/eng worktree remove <task>"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ],
+          "done": "The digest is empty or every item has an owner and a next step."
+        }
+      ]
+    },
+    {
+      "id": "fast-rust-ci",
+      "title": "Make a Rust CI fast without lowering the gate",
+      "glyph": "10",
+      "summary": "Measure, then cache, link, test and scope smarter — with before/after numbers and the same required checks.",
+      "when": "Rust builds or CI runs are the bottleneck for agents or reviewers.",
+      "steps": [
+        {
+          "title": "Baseline",
+          "body": "Time cold and warm builds and the CI run, per crate and per step, with enough runs to see variance. Record the list of required checks.",
+          "commands": [
+            "hyperfine --warmup 1 'cargo build --locked'",
+            "cargo build --timings",
+            "./.agents/bin/eng verify --profile full"
+          ],
+          "skills": [
+            "build-performance",
+            "performance-engineer"
+          ],
+          "done": "Before numbers, machine, toolchain and the required-check list are recorded."
+        },
+        {
+          "title": "Add a shared compiler cache",
+          "body": "Use a compiler cache on S3-compatible storage. Only main-branch CI writes; PR builds and agents read. Separate prefixes per project and toolchain; fixed workdir and path remapping; incremental compilation off in CI.",
+          "commands": [
+            "sccache --show-stats --stats-format json > cache.json",
+            "./.agents/bin/eng verify --profile full --cache-stats cache.json"
+          ],
+          "skills": [
+            "build-performance",
+            "agent-sandboxing"
+          ],
+          "done": "Cache hit rate is recorded in evidence; write credentials exist only in main-branch CI."
+        },
+        {
+          "title": "Faster linker and test runner",
+          "body": "Try one at a time: a faster linker (mold or lld), then cargo-nextest. Measure each separately.",
+          "commands": [
+            "hyperfine '<build with linker>'",
+            "cargo nextest run --locked"
+          ],
+          "skills": [
+            "build-performance"
+          ],
+          "done": "Each change has its own before/after numbers; the test set is unchanged."
+        },
+        {
+          "title": "Scope tests to the change",
+          "body": "Use the impact list for the fast profile; keep the full suite in the merge gate and heavy suites in nightly.",
+          "commands": [
+            "./.agents/bin/eng impact --base origin/main",
+            "./.agents/bin/eng verify --profile fast --scope '<crates tested>'"
+          ],
+          "skills": [
+            "verification-tiers",
+            "change-impact"
+          ],
+          "done": "The fast profile states its scope; the full gate still runs everything it ran before."
+        },
+        {
+          "title": "Keep or revert",
+          "body": "Compare after with before under the same conditions. Keep only changes that are faster with the same checks.",
+          "commands": [
+            "./.agents/bin/eng perf-check --baseline <before.json> --current <after.json>"
+          ],
+          "skills": [
+            "build-performance",
+            "improvement-loop"
+          ],
+          "done": "Kept changes carry their numbers; anything slower or narrower is reverted."
+        }
+      ]
+    },
+    {
+      "id": "autopilot",
+      "title": "Promote a repository to autopilot",
+      "glyph": "11",
+      "summary": "Reduce supervision one tier at a time, one repository at a time, on a week of evidence.",
+      "when": "Someone proposes letting agents merge or run a repository without per-change review.",
+      "steps": [
+        {
+          "title": "Check the controls",
+          "body": "Reproducible environment, passing full profile, tiered CI, merge queue, rollback path, spend cap, alerting, independent verification and a named human. Each needs a link or a command result.",
+          "commands": [
+            "./.agents/bin/eng doctor",
+            "./.agents/bin/eng verify --profile full",
+            "./.agents/bin/eng audit-actions"
+          ],
+          "skills": [
+            "autopilot-readiness"
+          ],
+          "done": "A checklist with evidence for every item is in the repository's work item."
+        },
+        {
+          "title": "Rehearse the rollback",
+          "body": "Revert a harmless change (or redeploy the previous version) and confirm the system returns to the previous state.",
+          "commands": [
+            "git revert <sha>",
+            "./.agents/bin/eng verify --profile full"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "release-verifier"
+          ],
+          "done": "The rollback was exercised and its evidence is linked."
+        },
+        {
+          "title": "Turn on the digest",
+          "body": "Deliver `eng digest` daily to the named human and set the budget cap.",
+          "commands": [
+            "./.agents/bin/eng digest <repo> --cost-cap <cap>"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "improvement-loop"
+          ],
+          "done": "The human receives the digest and every item has an owner."
+        },
+        {
+          "title": "Promote one tier",
+          "body": "The owner promotes the repository one tier. Other repositories wait.",
+          "commands": [
+            "gh api repos/<owner>/<repo>/rulesets  # confirm required checks and the merge queue"
+          ],
+          "skills": [
+            "autopilot-readiness"
+          ],
+          "done": "The tier decision and date are recorded by the owner."
+        },
+        {
+          "title": "Hold for a week",
+          "body": "Collect a week of evidence: merges, digest items, reverts and cost. Demote on a failed rollback, an unexplained revert, an overspend or an ignored digest item.",
+          "commands": [
+            "./.agents/bin/eng digest <repo> --json"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "improvement-loop"
+          ],
+          "done": "A week of evidence shows the tier holds before the next repository is considered."
+        }
+      ]
+    },
+    {
+      "id": "hardware-in-the-loop",
+      "title": "Hardware-in-the-loop (candidate)",
+      "glyph": "12",
+      "status": "candidate",
+      "summary": "Candidate path, not yet exercised: schematics, simulation and a device bench behind the same evidence standard.",
+      "when": "A project has electronics, firmware or a robot whose behaviour software tests cannot cover.",
+      "steps": [
+        {
+          "title": "Check the design files",
+          "body": "Run electrical and design-rule checks and generate fabrication outputs reproducibly from the source files.",
+          "commands": [
+            "kibot -c <config>.kibot.yaml"
+          ],
+          "skills": [
+            "verification-tiers"
+          ],
+          "done": "ERC/DRC results and generated outputs are attached to evidence; nothing is hand-edited."
+        },
+        {
+          "title": "Simulate the circuit",
+          "body": "Simulate the circuits that matter (power, sensing, drivers) with stated models and limits.",
+          "commands": [
+            "ngspice -b <circuit>.cir"
+          ],
+          "skills": [
+            "verification-tiers",
+            "performance-engineer"
+          ],
+          "done": "Simulation results and the model assumptions are recorded."
+        },
+        {
+          "title": "Emulate the firmware",
+          "body": "Run firmware tests on an emulator before touching a device.",
+          "commands": [
+            "renode <script>.resc",
+            "qemu-system-<arch> ..."
+          ],
+          "skills": [
+            "regression-guardian",
+            "verification-tiers"
+          ],
+          "done": "Firmware tests pass in emulation with recorded evidence."
+        },
+        {
+          "title": "Simulate the mechanism",
+          "body": "For robots, run the controller against a physics simulation with fixed seeds.",
+          "commands": [
+            "python <sim_test>.py  # MuJoCo"
+          ],
+          "skills": [
+            "verification-tiers"
+          ],
+          "done": "Simulated runs pass with seeds and tolerances recorded."
+        },
+        {
+          "title": "Run on the bench",
+          "body": "A self-hosted runner attached to real hardware runs a short, safe test sequence behind a human-approved gate.",
+          "commands": [
+            "./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'"
+          ],
+          "skills": [
+            "agent-sandboxing",
+            "verification-tiers"
+          ],
+          "done": "Bench results are in nightly evidence; a human approved any test that can damage hardware."
+        }
+      ]
     }
   ],
   "repos": [
@@ -1821,21 +2797,28 @@
     "Only the pilot and local review branches have been exercised; other repositories are not yet rolled out.",
     "The agent evaluation harness is a smoke test with two tasks, not a statistical model benchmark.",
     "Evidence is hash-chained locally but not signed; CI artifact retention is the external trust anchor.",
+    "Builder and verifier identities in evidence are declared by the caller, not authenticated.",
+    "Quarantine is declarative: the repository's test command must exclude the test; the kit reports it as unverified and blocks on expiry.",
+    "eng digest reads local evidence, quarantine files and worktrees; it does not fetch CI artifacts, forge state or provider spend.",
+    "The delivery metrics are defined in references/metrics.md; the kit records inputs but does not compute them.",
+    "Machine-level concurrency caps are guidance; the kit enforces only parallel.max_worktrees per repository.",
+    "The build-speed, quality-gate, reproducibility, isolation, scale, observability and hardware tools are conditional or candidate; none has been exercised in this repository with recorded evidence or at fleet scale.",
+    "No repository has been promoted with the autopilot-readiness checklist yet; the hardware-in-the-loop path is a candidate.",
     "The kit does not generate SBOMs or signatures; release-check can record and verify supplied material."
   ],
   "stats": {
-    "skills": 10,
-    "tools": 46,
+    "skills": 17,
+    "tools": 70,
     "adopted": 27,
-    "paths": 8,
+    "paths": 12,
     "phases": 6,
-    "principles": 7
+    "principles": 10
   },
   "download": {
     "file": "eng-kit.zip",
-    "sha256": "94edaadd0e6e822f129ebf0a9136454b87b38425b68903252c22a4e052dc3afa",
-    "size": 60909,
-    "entries": 29,
+    "sha256": "6216868fcbceef73b4917076c989a844ec28c64863a54ce7c7c3f673a368a5c3",
+    "size": 79324,
+    "entries": 37,
     "files": [
       "AGENTS.md",
       "README.agents.md",
@@ -1853,10 +2836,17 @@
       "lib/eng.py",
       "references/change-lifecycle.md",
       "references/evidence.md",
+      "references/metrics.md",
       "references/trust.md",
+      "skills/agent-sandboxing/SKILL.md",
+      "skills/autopilot-readiness/SKILL.md",
+      "skills/build-performance/SKILL.md",
       "skills/change-impact/SKILL.md",
       "skills/contract-guardian/SKILL.md",
       "skills/failure-investigator/SKILL.md",
+      "skills/improvement-loop/SKILL.md",
+      "skills/independent-verification/SKILL.md",
+      "skills/parallel-agent-work/SKILL.md",
       "skills/parallel-executor/SKILL.md",
       "skills/performance-engineer/SKILL.md",
       "skills/regression-guardian/SKILL.md",
@@ -1864,6 +2854,7 @@
       "skills/repo-intelligence/SKILL.md",
       "skills/safe-refactor/SKILL.md",
       "skills/security-auditor/SKILL.md",
+      "skills/verification-tiers/SKILL.md",
       "templates/AGENTS.md"
     ]
   }

@@ -3,13 +3,13 @@
   "name": "CREED",
   "homepage": "https://creed.sh",
   "creed": "https://creed.sh/creed.md",
-  "repository": "https://github.com/wckdboy/agent-engineering",
-  "version": "1.1.1",
+  "repository": "https://github.com/WCKDai/agent-engineering",
+  "version": "1.2.0",
   "source": {
-    "commit": "cb02a58",
-    "committed_at": "2026-10-31T19:15:42+01:00",
+    "commit": "03b68b4",
+    "committed_at": "2026-11-02T10:06:58+01:00",
     "dirty": true,
-    "content_sha256": "52bf0a0de77c3871a0a4078142e00d965d9ca6e7a4cd1719cde29fa41bfbcbbc"
+    "content_sha256": "87682621131c1108362c66998975b0b572a01dea8e060c0e68d04e85f4f3d8a8"
   },
   "start": {
     "read_first": [
@@ -57,6 +57,21 @@
       "id": "learn",
       "title": "Leave the system smarter",
       "lead": "Every failure should leave a test, a rule or a documented reason."
+    },
+    {
+      "id": "speed-keeps-evidence",
+      "title": "Speed never lowers the evidence level",
+      "lead": "Going faster is welcome; checking less is not. A faster gate must still check the same things."
+    },
+    {
+      "id": "report-by-exception",
+      "title": "Attention is scarce: report by exception",
+      "lead": "Humans read what needs them, not a stream of green. Exceptions are never hidden to keep the list short."
+    },
+    {
+      "id": "keep-the-number",
+      "title": "Measure before optimising, and keep the number",
+      "lead": "A before and an after, recorded where the next person can read them."
     }
   ],
   "skills": [
@@ -149,6 +164,69 @@
       "raw_url": "https://creed.sh/skills/release-verifier/SKILL.md",
       "phase": "report",
       "risk": "high"
+    },
+    {
+      "id": "verification-tiers",
+      "name": "Verification tiers",
+      "description": "Choose and run the right verification profile — fast for the inner loop, full on merge, nightly for fuzzing, mutation, benchmarks and heavy suites — and record its scope. Use when deciding what to run for a change, configuring profiles, or reporting which checks a result covers.",
+      "source": "skills/verification-tiers/SKILL.md",
+      "raw_url": "https://creed.sh/skills/verification-tiers/SKILL.md",
+      "phase": "verify",
+      "risk": "medium"
+    },
+    {
+      "id": "independent-verification",
+      "name": "Independent verification",
+      "description": "Verify a change with a fresh agent that did not build it and tries to break it. Use before a required gate is reported as passed, when one agent built a change and another must certify it, or when a repository requires separation of builder and verifier.",
+      "source": "skills/independent-verification/SKILL.md",
+      "raw_url": "https://creed.sh/skills/independent-verification/SKILL.md",
+      "phase": "verify",
+      "risk": "high"
+    },
+    {
+      "id": "parallel-agent-work",
+      "name": "Parallel agent work",
+      "description": "Run many agents on many repositories at once without collisions. Use when several agents or sub-agents work concurrently, share a build machine, or open pull requests against the same target; covers isolation, ownership, machine limits, merge queues, stop conditions and handoff.",
+      "source": "skills/parallel-agent-work/SKILL.md",
+      "raw_url": "https://creed.sh/skills/parallel-agent-work/SKILL.md",
+      "phase": "plan",
+      "risk": "high"
+    },
+    {
+      "id": "build-performance",
+      "name": "Build performance",
+      "description": "Make builds and CI faster without lowering the gate. Use when compile, test or CI time is the bottleneck, when adding a compiler cache, faster linker or test runner, or when someone claims a build optimisation; every change needs before/after numbers.",
+      "source": "skills/build-performance/SKILL.md",
+      "raw_url": "https://creed.sh/skills/build-performance/SKILL.md",
+      "phase": "baseline",
+      "risk": "medium"
+    },
+    {
+      "id": "agent-sandboxing",
+      "name": "Agent sandboxing",
+      "description": "Run agents in isolated, least-privilege environments. Use when setting up where agents execute, giving an agent credentials or network access, running untrusted code or dependencies, sharing caches or artifacts between agents, or deciding who may approve releases and deploys.",
+      "source": "skills/agent-sandboxing/SKILL.md",
+      "raw_url": "https://creed.sh/skills/agent-sandboxing/SKILL.md",
+      "phase": "plan",
+      "risk": "high"
+    },
+    {
+      "id": "autopilot-readiness",
+      "name": "Autopilot readiness",
+      "description": "Decide whether a repository can run with less human attention, and promote it one tier at a time. Use when proposing that agents merge or run a repository unattended, when reviewing a repository's controls before reducing supervision, or when an unattended repository misbehaves.",
+      "source": "skills/autopilot-readiness/SKILL.md",
+      "raw_url": "https://creed.sh/skills/autopilot-readiness/SKILL.md",
+      "phase": "report",
+      "risk": "high"
+    },
+    {
+      "id": "improvement-loop",
+      "name": "Improvement loop",
+      "description": "Improve the delivery system weekly from evidence — pick the single worst bottleneck, change one thing, measure, keep or revert. Use for the weekly engineering review, for proposing a process or tooling change, and for any change to Creed itself.",
+      "source": "skills/improvement-loop/SKILL.md",
+      "raw_url": "https://creed.sh/skills/improvement-loop/SKILL.md",
+      "phase": "report",
+      "risk": "low"
     }
   ],
   "paths": [
@@ -156,6 +234,7 @@
       "id": "onboard",
       "title": "Onboard a repository",
       "summary": "Discover the map, commands and policy before touching code.",
+      "status": "documented",
       "steps": [
         {
           "title": "Read the policy",
@@ -200,6 +279,7 @@
       "id": "fix-bug",
       "title": "Fix a bug",
       "summary": "Reproduce, prove the cause, fix it, and leave a red-then-green test.",
+      "status": "documented",
       "steps": [
         {
           "title": "Reproduce",
@@ -257,6 +337,7 @@
       "id": "add-feature",
       "title": "Add a feature",
       "summary": "Turn an outcome into the smallest change with a testable contract.",
+      "status": "documented",
       "steps": [
         {
           "title": "Define the acceptance criteria",
@@ -314,6 +395,7 @@
       "id": "refactor",
       "title": "Refactor safely",
       "summary": "Change structure without changing observable behavior.",
+      "status": "documented",
       "steps": [
         {
           "title": "Freeze the behavior",
@@ -368,6 +450,7 @@
       "id": "security",
       "title": "Harden a surface",
       "summary": "Model the trust boundary, scan it, fix the cause, and prove the fix.",
+      "status": "documented",
       "steps": [
         {
           "title": "Map the trust boundary",
@@ -413,6 +496,7 @@
       "id": "performance",
       "title": "Improve performance",
       "summary": "Baseline, profile, change one thing, and measure the distribution.",
+      "status": "documented",
       "steps": [
         {
           "title": "Define the metric",
@@ -458,6 +542,7 @@
       "id": "parallel",
       "title": "Parallelize work",
       "summary": "Split by independently verifiable units, isolate them, integrate sequentially.",
+      "status": "documented",
       "steps": [
         {
           "title": "Define units",
@@ -515,6 +600,7 @@
       "id": "release",
       "title": "Prepare a release",
       "summary": "Bind a clean revision, passing evidence, version, notes, rollback and artifact digest.",
+      "status": "documented",
       "steps": [
         {
           "title": "Freeze the candidate",
@@ -556,6 +642,252 @@
           ]
         }
       ]
+    },
+    {
+      "id": "parallel-agents",
+      "title": "Run many agents in parallel safely",
+      "summary": "Many agents on many repositories: one task, one worktree, one sandbox, one PR, and a queue instead of collisions.",
+      "status": "documented",
+      "steps": [
+        {
+          "title": "Write the ownership table",
+          "commands": [
+            "./.agents/bin/eng impact --base origin/main"
+          ],
+          "skills": [
+            "parallel-agent-work",
+            "change-impact"
+          ]
+        },
+        {
+          "title": "Set machine limits",
+          "commands": [
+            "./.agents/bin/eng worktree list",
+            "CARGO_BUILD_JOBS=<n> nice -n 10 <build>"
+          ],
+          "skills": [
+            "parallel-agent-work",
+            "agent-sandboxing"
+          ]
+        },
+        {
+          "title": "Start one worktree per task",
+          "commands": [
+            "./.agents/bin/eng worktree create <task> --owner <agent>"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ]
+        },
+        {
+          "title": "Verify each task on its own",
+          "commands": [
+            "./.agents/bin/eng verify --profile fast",
+            "./.agents/bin/eng verify --profile full --builder <agent> --verifier <other>"
+          ],
+          "skills": [
+            "verification-tiers",
+            "independent-verification"
+          ]
+        },
+        {
+          "title": "Land through the queue",
+          "commands": [
+            "gh pr merge <n> --squash --auto"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ]
+        },
+        {
+          "title": "Watch by exception",
+          "commands": [
+            "./.agents/bin/eng digest <repo>...",
+            "./.agents/bin/eng worktree remove <task>"
+          ],
+          "skills": [
+            "parallel-agent-work"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fast-rust-ci",
+      "title": "Make a Rust CI fast without lowering the gate",
+      "summary": "Measure, then cache, link, test and scope smarter — with before/after numbers and the same required checks.",
+      "status": "documented",
+      "steps": [
+        {
+          "title": "Baseline",
+          "commands": [
+            "hyperfine --warmup 1 'cargo build --locked'",
+            "cargo build --timings",
+            "./.agents/bin/eng verify --profile full"
+          ],
+          "skills": [
+            "build-performance",
+            "performance-engineer"
+          ]
+        },
+        {
+          "title": "Add a shared compiler cache",
+          "commands": [
+            "sccache --show-stats --stats-format json > cache.json",
+            "./.agents/bin/eng verify --profile full --cache-stats cache.json"
+          ],
+          "skills": [
+            "build-performance",
+            "agent-sandboxing"
+          ]
+        },
+        {
+          "title": "Faster linker and test runner",
+          "commands": [
+            "hyperfine '<build with linker>'",
+            "cargo nextest run --locked"
+          ],
+          "skills": [
+            "build-performance"
+          ]
+        },
+        {
+          "title": "Scope tests to the change",
+          "commands": [
+            "./.agents/bin/eng impact --base origin/main",
+            "./.agents/bin/eng verify --profile fast --scope '<crates tested>'"
+          ],
+          "skills": [
+            "verification-tiers",
+            "change-impact"
+          ]
+        },
+        {
+          "title": "Keep or revert",
+          "commands": [
+            "./.agents/bin/eng perf-check --baseline <before.json> --current <after.json>"
+          ],
+          "skills": [
+            "build-performance",
+            "improvement-loop"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "autopilot",
+      "title": "Promote a repository to autopilot",
+      "summary": "Reduce supervision one tier at a time, one repository at a time, on a week of evidence.",
+      "status": "documented",
+      "steps": [
+        {
+          "title": "Check the controls",
+          "commands": [
+            "./.agents/bin/eng doctor",
+            "./.agents/bin/eng verify --profile full",
+            "./.agents/bin/eng audit-actions"
+          ],
+          "skills": [
+            "autopilot-readiness"
+          ]
+        },
+        {
+          "title": "Rehearse the rollback",
+          "commands": [
+            "git revert <sha>",
+            "./.agents/bin/eng verify --profile full"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "release-verifier"
+          ]
+        },
+        {
+          "title": "Turn on the digest",
+          "commands": [
+            "./.agents/bin/eng digest <repo> --cost-cap <cap>"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "improvement-loop"
+          ]
+        },
+        {
+          "title": "Promote one tier",
+          "commands": [
+            "gh api repos/<owner>/<repo>/rulesets  # confirm required checks and the merge queue"
+          ],
+          "skills": [
+            "autopilot-readiness"
+          ]
+        },
+        {
+          "title": "Hold for a week",
+          "commands": [
+            "./.agents/bin/eng digest <repo> --json"
+          ],
+          "skills": [
+            "autopilot-readiness",
+            "improvement-loop"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hardware-in-the-loop",
+      "title": "Hardware-in-the-loop (candidate)",
+      "summary": "Candidate path, not yet exercised: schematics, simulation and a device bench behind the same evidence standard.",
+      "status": "candidate",
+      "steps": [
+        {
+          "title": "Check the design files",
+          "commands": [
+            "kibot -c <config>.kibot.yaml"
+          ],
+          "skills": [
+            "verification-tiers"
+          ]
+        },
+        {
+          "title": "Simulate the circuit",
+          "commands": [
+            "ngspice -b <circuit>.cir"
+          ],
+          "skills": [
+            "verification-tiers",
+            "performance-engineer"
+          ]
+        },
+        {
+          "title": "Emulate the firmware",
+          "commands": [
+            "renode <script>.resc",
+            "qemu-system-<arch> ..."
+          ],
+          "skills": [
+            "regression-guardian",
+            "verification-tiers"
+          ]
+        },
+        {
+          "title": "Simulate the mechanism",
+          "commands": [
+            "python <sim_test>.py  # MuJoCo"
+          ],
+          "skills": [
+            "verification-tiers"
+          ]
+        },
+        {
+          "title": "Run on the bench",
+          "commands": [
+            "./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'"
+          ],
+          "skills": [
+            "agent-sandboxing",
+            "verification-tiers"
+          ]
+        }
+      ]
     }
   ],
   "tools": [
@@ -565,6 +897,7 @@
       "category": "intelligence",
       "status": "adopted",
       "summary": "Exact symbol and text search across tracked trees.",
+      "failure_mode": "Finds text, not meaning: misses dynamic references, macros and generated code.",
       "command": "./.agents/bin/eng impact --base origin/main"
     },
     {
@@ -573,6 +906,7 @@
       "category": "intelligence",
       "status": "adopted",
       "summary": "Search tracked files without extra tooling.",
+      "failure_mode": "Same textual limits as ripgrep; untracked files are invisible to it.",
       "command": "git grep -n -w <symbol>"
     },
     {
@@ -581,6 +915,7 @@
       "category": "intelligence",
       "status": "adopted",
       "summary": "Compiler-backed definitions, references and diagnostics.",
+      "failure_mode": "Only as good as the project's build configuration; a stale index or failing build gives wrong answers.",
       "command": "rust-analyzer / clangd / sourcekit-lsp / tsserver / gopls"
     },
     {
@@ -589,6 +924,7 @@
       "category": "intelligence",
       "status": "adopted",
       "summary": "Build graph, package names and targets without reading the tree.",
+      "failure_mode": "Describes the declared graph, not feature-gated or build-script-generated code paths.",
       "command": "cargo metadata --no-deps --format-version 1"
     },
     {
@@ -597,6 +933,7 @@
       "category": "intelligence",
       "status": "candidate",
       "summary": "Structural search and rewrite across many languages.",
+      "failure_mode": "Rules match syntax, not types; a pattern can silently miss variants.",
       "command": "sg run --pattern '<pattern>'"
     },
     {
@@ -605,6 +942,7 @@
       "category": "intelligence",
       "status": "candidate",
       "summary": "Incremental parsing for structural indexes.",
+      "failure_mode": "Grammars lag language releases; parse errors degrade to partial trees.",
       "command": "n/a"
     },
     {
@@ -613,6 +951,7 @@
       "category": "intelligence",
       "status": "candidate",
       "summary": "Persistent code-intelligence indexes for large repositories.",
+      "failure_mode": "Indexes go stale between builds; a stale index reports outdated references.",
       "command": "n/a"
     },
     {
@@ -621,6 +960,7 @@
       "category": "verification",
       "status": "adopted",
       "summary": "Rust unit, integration and doc tests.",
+      "failure_mode": "Proves only what the tests assert; feature flags and targets not built are not tested.",
       "command": "cargo test --quiet"
     },
     {
@@ -629,6 +969,7 @@
       "category": "verification",
       "status": "adopted",
       "summary": "Python unit and integration tests.",
+      "failure_mode": "Fixtures and monkeypatching can hide real integration failures.",
       "command": "python3 -m pytest -q"
     },
     {
@@ -637,6 +978,7 @@
       "category": "verification",
       "status": "adopted",
       "summary": "JavaScript and TypeScript tests.",
+      "failure_mode": "Mocks and test environments (jsdom) differ from real runtimes.",
       "command": "npm test / pnpm test"
     },
     {
@@ -645,6 +987,7 @@
       "category": "verification",
       "status": "adopted",
       "summary": "Swift package tests on macOS and Linux.",
+      "failure_mode": "Simulator and host differ from devices; UI behaviour needs separate tests.",
       "command": "swift test"
     },
     {
@@ -653,39 +996,52 @@
       "category": "verification",
       "status": "adopted",
       "summary": "JVM and Android unit/instrumentation tests.",
+      "failure_mode": "Robolectric and emulators differ from devices; instrumentation tests can be flaky.",
       "command": "./gradlew test"
     },
     {
       "id": "proptest",
-      "name": "Property-based testing",
+      "name": "Property-based testing (proptest)",
       "category": "verification",
       "status": "conditional",
       "summary": "Generate inputs from invariants instead of enumerating examples.",
-      "command": "cargo test / proptest!"
+      "failure_mode": "Generators can miss the interesting region; an unpinned seed makes failures hard to reproduce.",
+      "command": "cargo test / proptest!",
+      "version": "1.12.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "fuzzing",
-      "name": "Fuzzing",
+      "name": "Fuzzing (cargo-fuzz)",
       "category": "verification",
       "status": "conditional",
       "summary": "Coverage-guided input exploration for parsers and binary formats.",
-      "command": "cargo fuzz run <target>"
+      "failure_mode": "Finds only what the harness reaches; no crashes in a short run is weak evidence.",
+      "command": "cargo fuzz run <target>",
+      "version": "cargo-fuzz 0.13.2",
+      "checked": "2026-11-02"
     },
     {
       "id": "mutation",
-      "name": "Mutation testing",
+      "name": "Mutation testing (cargo-mutants)",
       "category": "verification",
       "status": "candidate",
       "summary": "Test the tests by mutating production code.",
-      "command": "cargo mutants / stryker / mutmut"
+      "failure_mode": "Slow, and surviving equivalent mutants create noise; easy to misread as a coverage score.",
+      "command": "cargo mutants --in-diff <diff> / stryker / mutmut",
+      "version": "cargo-mutants 27.1.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "golden",
-      "name": "Golden and snapshot tests",
+      "name": "Golden and snapshot tests (insta)",
       "category": "verification",
       "status": "conditional",
       "summary": "Freeze serialized output, CLI text, rendering and formats.",
-      "command": "insta / syrupy / vitest snapshots"
+      "failure_mode": "Regenerating goldens to make a red test green turns them into rubber stamps.",
+      "command": "insta / syrupy / vitest snapshots",
+      "version": "insta 1.49.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "contract-tests",
@@ -693,6 +1049,7 @@
       "category": "verification",
       "status": "conditional",
       "summary": "Old/new fixtures and reference implementations for compatibility.",
+      "failure_mode": "Fixtures cover the cases someone thought of; real consumers may rely on others.",
       "command": "repository-specific fixture runner"
     },
     {
@@ -701,6 +1058,7 @@
       "category": "security",
       "status": "adopted",
       "summary": "Secret scanning for tracked files and history.",
+      "failure_mode": "Pattern-based: misses novel secret formats and flags fake ones; untracked files are not scanned.",
       "command": "./.agents/bin/eng security"
     },
     {
@@ -709,6 +1067,7 @@
       "category": "security",
       "status": "adopted",
       "summary": "Language-aware SAST with a small, tested rule set.",
+      "failure_mode": "Only the rules configured; a clean run means those rules found nothing.",
       "command": "./.agents/bin/eng security"
     },
     {
@@ -717,6 +1076,7 @@
       "category": "security",
       "status": "adopted",
       "summary": "Dependency vulnerabilities from lockfiles.",
+      "failure_mode": "Needs network and a supported lockfile; advisories lag disclosure.",
       "command": "./.agents/bin/eng security"
     },
     {
@@ -725,6 +1085,7 @@
       "category": "security",
       "status": "adopted",
       "summary": "GitHub Actions syntax, expression and shell checks.",
+      "failure_mode": "Checks syntax and shell, not whether a workflow is safe to run on untrusted input.",
       "command": "actionlint .github/workflows/*.yml"
     },
     {
@@ -733,6 +1094,7 @@
       "category": "security",
       "status": "adopted",
       "summary": "Security audit for GitHub Actions workflows.",
+      "failure_mode": "Static audit of workflow files; cannot see repository settings or secrets scoping.",
       "command": "zizmor --format plain --no-progress .github/workflows"
     },
     {
@@ -741,6 +1103,7 @@
       "category": "security",
       "status": "candidate",
       "summary": "Deep dataflow and semantic code analysis.",
+      "failure_mode": "Slow and heavy; query coverage varies by language, and alerts need triage.",
       "command": "codeql database analyze"
     },
     {
@@ -749,6 +1112,7 @@
       "category": "security",
       "status": "candidate",
       "summary": "Image, filesystem, SBOM and vulnerability scanning.",
+      "failure_mode": "Database freshness and noise; image scans miss what is fetched at runtime.",
       "command": "trivy image <image>"
     },
     {
@@ -757,6 +1121,7 @@
       "category": "security",
       "status": "conditional",
       "summary": "Sign and verify release artifacts and attestations.",
+      "failure_mode": "A signature proves who signed, not that the artifact is safe; key or identity mistakes break trust.",
       "command": "cosign verify-blob --key <pub> --signature <sig> <artifact>"
     },
     {
@@ -765,6 +1130,7 @@
       "category": "execution",
       "status": "adopted",
       "summary": "One checkout and branch per independent unit.",
+      "failure_mode": "Isolate files, not shared caches, ports, databases or devices.",
       "command": "./.agents/bin/eng worktree create <task>"
     },
     {
@@ -773,6 +1139,7 @@
       "category": "execution",
       "status": "adopted",
       "summary": "Detect, impact, verify, guard, security, worktrees and evidence.",
+      "failure_mode": "Runs what the config says; a weak config gives a green gate that proves little.",
       "command": "./.agents/bin/eng verify --profile full"
     },
     {
@@ -781,6 +1148,7 @@
       "category": "execution",
       "status": "adopted",
       "summary": "Shared, immutable quality gates and evidence artifacts.",
+      "failure_mode": "A pull request runs its own copy of the workflow, so CI cannot vouch for changes to CI.",
       "command": "./.agents/bin/eng verify --profile full --ci"
     },
     {
@@ -789,15 +1157,19 @@
       "category": "execution",
       "status": "conditional",
       "summary": "Ephemeral, reproducible execution where native setup is insufficient.",
+      "failure_mode": "Image drift and unpinned bases break reproducibility; containers are not a strong security boundary on their own.",
       "command": "docker run --rm ..."
     },
     {
       "id": "sccache",
-      "name": "sccache / R2",
+      "name": "sccache (S3-compatible)",
       "category": "execution",
       "status": "conditional",
-      "summary": "Content-addressed build caching across runners.",
-      "command": "SCCACHE_BUCKET=... sccache"
+      "summary": "Shared compiler cache for Rust (and C/C++) across runners, on S3-compatible storage.",
+      "failure_mode": "A poisoned or mismatched cache returns wrong artifacts; key mismatches (paths, flags, toolchain) give near-zero hit rates.",
+      "command": "sccache --show-stats --stats-format json",
+      "version": "0.19.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "evidence",
@@ -805,6 +1177,7 @@
       "category": "observability",
       "status": "adopted",
       "summary": "Hash-chained JSON for every verification run.",
+      "failure_mode": "Local and unsigned: proves integrity of the chain, not who produced it.",
       "command": "./.agents/bin/eng evidence verify"
     },
     {
@@ -813,6 +1186,7 @@
       "category": "observability",
       "status": "adopted",
       "summary": "Retain evidence outside the agent's context.",
+      "failure_mode": "Retention expires; artifacts are only as trustworthy as the job that uploaded them.",
       "command": "actions/upload-artifact"
     },
     {
@@ -821,7 +1195,10 @@
       "category": "observability",
       "status": "candidate",
       "summary": "Traces, metrics and logs across agents and services.",
-      "command": "OTEL_EXPORTER_OTLP_ENDPOINT=..."
+      "failure_mode": "Instrumentation without a consumer is cost without value; traces can leak sensitive data.",
+      "command": "OTEL_EXPORTER_OTLP_ENDPOINT=...",
+      "version": "Collector 0.164.0",
+      "checked": "2026-11-02"
     },
     {
       "id": "agent-eval",
@@ -829,6 +1206,7 @@
       "category": "observability",
       "status": "adopted",
       "summary": "Scored tasks in isolated worktrees.",
+      "failure_mode": "Two smoke tasks: detects gross regressions, not model quality.",
       "command": "./evals/agent/run.py --agent-cmd '<command>'"
     },
     {
@@ -837,6 +1215,7 @@
       "category": "context",
       "status": "adopted",
       "summary": "The repository's authoritative policy and map.",
+      "failure_mode": "Stale policy misleads agents; it is guidance, not enforcement.",
       "command": "read AGENTS.md first"
     },
     {
@@ -844,7 +1223,8 @@
       "name": "Agent Skills",
       "category": "context",
       "status": "adopted",
-      "summary": "Ten task-specific entrypoints with workflows and completion criteria.",
+      "summary": "Seventeen task-specific entrypoints with workflows and completion criteria.",
+      "failure_mode": "Text, not enforcement: an agent can ignore a skill; the gate still has to catch it.",
       "command": "read .agents/skills/<name>/SKILL.md"
     },
     {
@@ -853,6 +1233,7 @@
       "category": "context",
       "status": "adopted",
       "summary": "Durable decisions linked to source and tests.",
+      "failure_mode": "Decisions rot if not linked to code and revisited.",
       "command": "docs/adr/ or docs/architecture/"
     },
     {
@@ -861,6 +1242,7 @@
       "category": "connectors",
       "status": "adopted",
       "summary": "Agent executor with skills, tools and sessions.",
+      "failure_mode": "Executor behaviour changes between versions; its permissions must be configured, not assumed.",
       "command": "opencode"
     },
     {
@@ -869,6 +1251,7 @@
       "category": "connectors",
       "status": "adopted",
       "summary": "Agent executor and AGENTS.md reader.",
+      "failure_mode": "Executor behaviour changes between versions; sandbox and approval settings vary by environment.",
       "command": "codex"
     },
     {
@@ -877,6 +1260,7 @@
       "category": "connectors",
       "status": "adopted",
       "summary": "Agent executor with project skills.",
+      "failure_mode": "Executor behaviour changes between versions; permission modes must be set deliberately.",
       "command": "claude"
     },
     {
@@ -885,6 +1269,7 @@
       "category": "connectors",
       "status": "conditional",
       "summary": "Local-first agent with threads, approvals and receipts.",
+      "failure_mode": "Local agent in development; receipts are only as complete as the instrumentation.",
       "command": "autobot"
     },
     {
@@ -893,6 +1278,7 @@
       "category": "connectors",
       "status": "conditional",
       "summary": "Model gateway with policy, redaction, receipts and audit.",
+      "failure_mode": "Gateway in development; a misconfigured policy can pass or block more than intended.",
       "command": "gateway-managed model routing"
     },
     {
@@ -901,6 +1287,7 @@
       "category": "connectors",
       "status": "conditional",
       "summary": "Self-hosted model routing and budgets.",
+      "failure_mode": "Another service to run and secure; routing errors can send data to the wrong provider.",
       "command": "platform service"
     },
     {
@@ -909,6 +1296,7 @@
       "category": "connectors",
       "status": "adopted",
       "summary": "Issues, PRs, CI runs, artifacts and checks.",
+      "failure_mode": "Platform outages and rate limits; API tokens are high-value credentials.",
       "command": "gh auth status"
     },
     {
@@ -917,6 +1305,7 @@
       "category": "connectors",
       "status": "conditional",
       "summary": "Work items, projects and delivery tracking.",
+      "failure_mode": "Tracking drifts from reality unless items are updated when work lands.",
       "command": "plane MCP tools"
     },
     {
@@ -925,7 +1314,272 @@
       "category": "connectors",
       "status": "conditional",
       "summary": "Design files and rendered UI artifacts.",
+      "failure_mode": "Design files drift from shipped UI without a review step.",
       "command": "pencil MCP tools"
+    },
+    {
+      "id": "cargo-nextest",
+      "name": "cargo-nextest",
+      "category": "build",
+      "status": "conditional",
+      "summary": "Faster Rust test runner: per-test processes, retries reported, JUnit output.",
+      "failure_mode": "Skips doctests unless run separately; retries can hide flakes if they are treated as passes.",
+      "command": "cargo nextest run --locked",
+      "version": "0.9.150",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "fast-linker",
+      "name": "mold or lld",
+      "category": "build",
+      "status": "conditional",
+      "summary": "A faster linker for large Rust binaries.",
+      "failure_mode": "Platform-specific flags; a linker difference can surface as an obscure link error or a different binary layout.",
+      "command": "RUSTFLAGS='-C link-arg=-fuse-ld=mold' cargo build",
+      "version": "mold 3.0.0 / LLVM lld 23.1.4",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-hakari",
+      "name": "cargo-hakari",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Workspace-hack crate so feature unification stops causing rebuilds.",
+      "failure_mode": "A stale workspace-hack causes surprising rebuilds or feature changes; it must be verified in CI.",
+      "command": "cargo hakari generate && cargo hakari verify",
+      "version": "0.9.39",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-chef",
+      "name": "cargo-chef",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Caches Rust dependency builds as a container layer.",
+      "failure_mode": "Only helps container builds; a recipe out of sync with the lockfile caches the wrong dependencies.",
+      "command": "cargo chef prepare --recipe-path recipe.json && cargo chef cook --release --recipe-path recipe.json",
+      "version": "0.1.78",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "bacon",
+      "name": "bacon",
+      "category": "build",
+      "status": "candidate",
+      "summary": "Background checker for the local Rust inner loop.",
+      "failure_mode": "Its output is not evidence; a green bacon pane is not a verified gate.",
+      "command": "bacon clippy",
+      "version": "3.26.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-deny",
+      "name": "cargo-deny",
+      "category": "security",
+      "status": "conditional",
+      "summary": "Licence, advisory, source and duplicate-version checks for Rust dependencies.",
+      "failure_mode": "A permissive deny.toml or broad exceptions make it pass without checking; needs the advisory database (network).",
+      "command": "cargo deny check",
+      "version": "0.20.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-audit",
+      "name": "cargo-audit",
+      "category": "security",
+      "status": "conditional",
+      "summary": "RustSec advisory scan of Cargo.lock.",
+      "failure_mode": "Advisories lag disclosure; ignored IDs must carry a reason and an expiry.",
+      "command": "cargo audit",
+      "version": "0.22.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-machete",
+      "name": "cargo-machete",
+      "category": "verification",
+      "status": "conditional",
+      "summary": "Finds unused dependencies in Cargo.toml.",
+      "failure_mode": "Text-based: false positives for dependencies used only through macros or build scripts.",
+      "command": "cargo machete",
+      "version": "0.9.2",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "cargo-llvm-cov",
+      "name": "cargo-llvm-cov",
+      "category": "verification",
+      "status": "conditional",
+      "summary": "Source-based code coverage for Rust tests.",
+      "failure_mode": "High coverage with weak assertions proves little; instrumented builds are slower and can change timing.",
+      "command": "cargo llvm-cov --workspace --lcov --output-path lcov.info",
+      "version": "0.9.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "nix-devenv",
+      "name": "Nix / devenv",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "Declarative, pinned development and CI environments.",
+      "failure_mode": "Complexity and evaluation time; macOS support differs from Linux.",
+      "command": "devenv shell / nix develop",
+      "version": "Nix 2.35.4 / devenv 2.4.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "mise",
+      "name": "mise",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "Pinned tool versions per repository (toolchains, CLIs).",
+      "failure_mode": "Pins tools, not the OS or system libraries; plugins fetch from the network.",
+      "command": "mise install && mise exec -- <cmd>",
+      "version": "2026.10.25",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "dagger",
+      "name": "Dagger",
+      "category": "reproducibility",
+      "status": "candidate",
+      "summary": "CI pipelines as code that run the same locally and in CI.",
+      "failure_mode": "Another runtime in the trust path; engine caching needs the same poisoning care as build caches.",
+      "command": "dagger call <function>",
+      "version": "0.21.11",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "gvisor",
+      "name": "gVisor",
+      "category": "isolation",
+      "status": "candidate",
+      "summary": "User-space kernel sandbox for containers running untrusted work.",
+      "failure_mode": "Syscall compatibility gaps and performance overhead for I/O-heavy builds.",
+      "command": "docker run --runtime=runsc ...",
+      "version": "release-20261026.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "firecracker",
+      "name": "Firecracker",
+      "category": "isolation",
+      "status": "candidate",
+      "summary": "MicroVMs for strong per-task isolation.",
+      "failure_mode": "Linux/KVM only; image, network and storage plumbing is yours to build and secure.",
+      "command": "firecracker --api-sock <sock>",
+      "version": "1.17.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "buck2-bazel",
+      "name": "Buck2 or Bazel (remote execution)",
+      "category": "scale",
+      "status": "candidate",
+      "summary": "Hermetic builds with remote caching and execution.",
+      "failure_mode": "Migration cost and a second build definition that can drift from Cargo; hermeticity breaks quietly.",
+      "command": "bazel build //... / buck2 build //...",
+      "version": "Bazel 9.3.1; Buck2 publishes rolling releases",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "temporal",
+      "name": "Temporal",
+      "category": "scale",
+      "status": "candidate",
+      "summary": "Durable workflows for long-running, retryable agent orchestration.",
+      "failure_mode": "A stateful service to run, secure and upgrade; workflow code has determinism rules that are easy to break.",
+      "command": "temporal workflow start ...",
+      "version": "1.32.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "langfuse",
+      "name": "Langfuse-style agent traces",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Traces of agent runs: prompts, tool calls, cost and latency.",
+      "failure_mode": "Traces can capture secrets and private code; another data store to secure and retain correctly.",
+      "command": "LANGFUSE_HOST=... (SDK or OpenTelemetry export)",
+      "version": "4.72.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "prometheus-grafana",
+      "name": "Prometheus / Grafana",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Metrics and dashboards for CI duration, queue depth, cache hit rate and cost.",
+      "failure_mode": "Dashboards nobody reads; metrics without definitions drift from references/metrics.md.",
+      "command": "prometheus --config.file=prometheus.yml",
+      "version": "Prometheus 3.15.1 / Grafana 13.3.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "push-notifications",
+      "name": "Push notifications for exceptions",
+      "category": "observability",
+      "status": "candidate",
+      "summary": "Deliver the exception digest to the human who owns it.",
+      "failure_mode": "Alert fatigue if it sends passes; silent failure if the notifier breaks, so a missing digest must itself be noticed.",
+      "command": "./.agents/bin/eng digest <repos> --json | <notifier>",
+      "version": "n/a",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "kicad-kibot",
+      "name": "KiCad with KiBot",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Schematic/PCB design with scripted ERC/DRC and fabrication outputs.",
+      "failure_mode": "Rule checks only cover the rules configured; generated outputs must not be hand-edited.",
+      "command": "kibot -c <config>.kibot.yaml",
+      "version": "KiCad 10.0.7 / KiBot 1.9.1",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "ngspice",
+      "name": "ngspice",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Circuit simulation (SPICE).",
+      "failure_mode": "Wrong or idealised models give confident wrong answers.",
+      "command": "ngspice -b <circuit>.cir",
+      "version": "47",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "renode-qemu",
+      "name": "Renode / QEMU",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Emulate microcontrollers and boards to test firmware without devices.",
+      "failure_mode": "Missing or inaccurate peripheral models; timing differs from hardware.",
+      "command": "renode <script>.resc / qemu-system-<arch>",
+      "version": "Renode 1.17.0 / QEMU 11.1.3",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "mujoco",
+      "name": "MuJoCo",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "Physics simulation for robot controllers.",
+      "failure_mode": "Sim-to-real gap: contact, friction and actuator models differ from the robot.",
+      "command": "python -m <sim_test>",
+      "version": "3.17.0",
+      "checked": "2026-11-02"
+    },
+    {
+      "id": "hil-runner",
+      "name": "Hardware-in-the-loop runner",
+      "category": "hardware",
+      "status": "candidate",
+      "summary": "A self-hosted runner attached to real devices for bench tests.",
+      "failure_mode": "Untrusted code on a runner with physical devices; flaky hardware reported as passing.",
+      "command": "./.agents/bin/eng verify --profile nightly --scope 'bench: <device>'",
+      "version": "n/a",
+      "checked": "2026-11-02"
     }
   ],
   "repos": [
@@ -1079,6 +1733,13 @@
     "Only the pilot and local review branches have been exercised; other repositories are not yet rolled out.",
     "The agent evaluation harness is a smoke test with two tasks, not a statistical model benchmark.",
     "Evidence is hash-chained locally but not signed; CI artifact retention is the external trust anchor.",
+    "Builder and verifier identities in evidence are declared by the caller, not authenticated.",
+    "Quarantine is declarative: the repository's test command must exclude the test; the kit reports it as unverified and blocks on expiry.",
+    "eng digest reads local evidence, quarantine files and worktrees; it does not fetch CI artifacts, forge state or provider spend.",
+    "The delivery metrics are defined in references/metrics.md; the kit records inputs but does not compute them.",
+    "Machine-level concurrency caps are guidance; the kit enforces only parallel.max_worktrees per repository.",
+    "The build-speed, quality-gate, reproducibility, isolation, scale, observability and hardware tools are conditional or candidate; none has been exercised in this repository with recorded evidence or at fleet scale.",
+    "No repository has been promoted with the autopilot-readiness checklist yet; the hardware-in-the-loop path is a candidate.",
     "The kit does not generate SBOMs or signatures; release-check can record and verify supplied material."
   ],
   "download": "./downloads/eng-kit.zip"
