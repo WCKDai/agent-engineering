@@ -143,6 +143,10 @@ class SiteTests(unittest.TestCase):
                 self.assertNotEqual(tool["status"], "adopted", f"{tool['id']} has no evidence in this repository")
             if tool["category"] in {"scale", "hardware"}:
                 self.assertEqual(tool["status"], "candidate", tool["id"])
+            docs = tool["docs"]
+            if not docs.startswith("https://"):
+                target = docs.removeprefix("./").split("#")[0]
+                self.assertTrue(target == "" or (SITE / target).exists(), f"{tool['id']}: {docs} is not in the site")
             if "version" in tool:
                 self.assertRegex(tool["checked"], r"^\d{4}-\d{2}-\d{2}$")
         skill_ids = {s["id"] for s in data["skills"]}
