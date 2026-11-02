@@ -96,7 +96,8 @@ escape hatch are linked.
   https://github.com/getsentry/sentry/blob/c692fefae8eaee263af3491f30747bae2eb2d756/migrations_lockfile.txt
 - Temporal, add-only versioned schema with a minimum compatible version, rollback-tolerant boot check:
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/schema/cassandra/README.md,
-  https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/common/persistence/schema/version.go
+  https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/common/persistence/schema/version.go,
+  https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/temporal/fx.go
 - Twenty, append-only upgrade commands, pending-migration diff and cross-version upgrade CI:
   https://github.com/twentyhq/twenty/blob/99ac0c8ab050f8f329254a00a7e4e9b07da96cc8/.github/workflows/ci-cross-version-upgrade.yaml,
   https://github.com/twentyhq/twenty/blob/99ac0c8ab050f8f329254a00a7e4e9b07da96cc8/.github/actions/upgrade-mutation-guard/action.yaml

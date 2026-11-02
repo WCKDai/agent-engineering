@@ -84,7 +84,8 @@ description with verification and its gaps, and every review comment has an answ
   descriptions, stop on conflicts:
   https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/.github/workflows/triage-pr-standards.yml,
   https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/.github/pull_request_template.md,
-  https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/CONTRIBUTING.md
+  https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/CONTRIBUTING.md,
+  https://github.com/anomalyco/opencode/blob/67139d6827af3a337c80472c33f9cb7c6c2ce500/.opencode/command/commit.md
 - t3code, one underlying problem per PR, verification that states what was not checked:
   https://github.com/pingdotgg/t3code/blob/47f2c8d29e981c7723467efe137ee19e91df924e/CONTRIBUTING.md,
   https://github.com/pingdotgg/t3code/blob/47f2c8d29e981c7723467efe137ee19e91df924e/.github/pull_request_template.md
