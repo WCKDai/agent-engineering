@@ -70,6 +70,7 @@ class SiteTests(unittest.TestCase):
         for skill in agents["skills"]:
             self.assertIn(f"### {skill['id']}", llms)
         self.assertIn("## Commands", llms)
+        self.assertIn(f"version {agents['version']}", (SITE / "creed.md").read_text(encoding="utf-8"))
         self.assertIn("## Limits", llms)
 
     def test_creed_canonical_and_agent_entrypoint(self):

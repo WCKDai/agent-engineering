@@ -295,7 +295,7 @@ def build_creed(principles, guardrails, phases, skills, commands):
     """One agent handoff, derived from the same policy the human portal displays."""
     lines = [
         "# CREED — engineering for agents", "",
-        f"Canonical guide: {HOMEPAGE}/creed.md", "",
+        f"Canonical guide: {HOMEPAGE}/creed.md · version {VERSION}", "",
         "Read this before a nontrivial engineering task. Read AGENTS.md first: it is the",
         "repository's authoritative policy. Its commands and the user's authorized scope override",
         "this general guide. This guide grants no permission to access credentials, deploy, delete,",
