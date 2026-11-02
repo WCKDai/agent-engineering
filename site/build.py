@@ -450,7 +450,7 @@ def main():
         "skills": [{"id": s["id"], "name": s["name"], "description": s["description"],
                      "source": s["source_path"], "raw_url": f"{HOMEPAGE}/{s['source_path']}",
                      "phase": s["phase"], "risk": s["risk"]} for s in skills],
-        "paths": [{"id": p["id"], "title": p["title"], "summary": p["summary"],
+        "paths": [{"id": p["id"], "title": p["title"], "summary": p["summary"], "status": p.get("status", "documented"),
                     "steps": [{"title": st["title"], "commands": st["commands"], "skills": st["skills"]} for st in p["steps"]]}
                    for p in paths],
         "tools": [{"id": t["id"], "name": t["name"], "category": t["category"], "status": t["status"],

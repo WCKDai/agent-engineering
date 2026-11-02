@@ -135,8 +135,12 @@ class SiteTests(unittest.TestCase):
 
     def test_paths_and_repositories_are_usable(self):
         data = json.loads(DATA.read_text(encoding="utf-8"))
-        self.assertEqual(len(data["paths"]), 8)
+        self.assertEqual(len(data["paths"]), 12)
+        skill_ids = {s["id"] for s in data["skills"]}
+        self.assertEqual(next(p for p in data["paths"] if p["id"] == "hardware-in-the-loop").get("status"), "candidate")
         for path in data["paths"]:
+            for step in path["steps"]:
+                self.assertLessEqual(set(step["skills"]), skill_ids, f"{path['id']}: {step['title']}")
             self.assertGreaterEqual(len(path["steps"]), 4, path["id"])
             for step in path["steps"]:
                 self.assertTrue(step["commands"], f"{path['id']}: {step['title']} has no command")
