@@ -327,6 +327,48 @@ class IndependentVerificationTests(EngTestCase):
         self.assertEqual(res.returncode, 0, res.stdout)
 
 
+class QuarantineTests(EngTestCase):
+    def quarantine(self, *entries):
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": list(entries)}))
+
+    def verdict(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())["verdict"]
+
+    def test_active_quarantine_is_reported_unverified(self):
+        self.init_basic()
+        self.quarantine({"test": "tests/test_net.py::test_retry", "owner": "agent-a",
+                         "expires": "2999-01-01", "reason": "flaky on CI runners"})
+        res = eng(self.tmp, "verify")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        verdict = self.verdict()
+        self.assertEqual(verdict["status"], "pass")
+        self.assertTrue(any("tests/test_net.py::test_retry" in u for u in verdict["unverified"]))
+        self.assertIn("quarantined test not verified", res.stdout)
+
+    def test_expired_quarantine_blocks(self):
+        self.init_basic()
+        self.quarantine({"test": "t", "owner": "agent-a", "expires": "2000-01-01", "reason": "flaky"})
+        res = eng(self.tmp, "verify")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        self.assertEqual(self.verdict()["status"], "blocked")
+
+    def test_entry_without_an_owner_blocks(self):
+        self.init_basic()
+        self.quarantine({"test": "t", "expires": "2999-01-01", "reason": "flaky"})
+        self.assertEqual(eng(self.tmp, "verify").returncode, 2)
+
+    def test_expiry_boundary_is_inclusive(self):
+        from datetime import date
+        root = self.tmp
+        self.repo.write(".agents/quarantine.json", json.dumps({"schema": "eng-quarantine/v1", "entries": [
+            {"test": "t", "owner": "o", "expires": "2026-11-02", "reason": "r"}]}))
+        active, problems = eng_lib.load_quarantine(root, today=date(2026, 11, 2))
+        self.assertEqual((len(active), problems), (1, []))
+        active, problems = eng_lib.load_quarantine(root, today=date(2026, 11, 3))
+        self.assertEqual(len(active), 0)
+        self.assertEqual(len(problems), 1)
+
+
 class ActionPinTests(EngTestCase):
     def workflow(self, ref):
         self.repo.write(".github/workflows/test.yml",

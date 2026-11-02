@@ -29,6 +29,8 @@ CONFIG_SCHEMA = "eng-config/v1"
 DETECT_SCHEMA = "eng-detect/v1"
 IMPACT_SCHEMA = "eng-impact/v1"
 EVIDENCE_SCHEMA = "eng-evidence/v1"
+QUARANTINE_SCHEMA = "eng-quarantine/v1"
+QUARANTINE_FILE = Path(".agents/quarantine.json")
 EVIDENCE_DIR = Path(".agents/evidence")
 WORKTREE_DIR = Path(".worktrees")
 
@@ -1321,6 +1323,36 @@ def run_metadata(args):
     return {k: v for k, v in meta.items() if v}
 
 
+def load_quarantine(root, today=None):
+    """Declared flaky tests. Active entries are unverified; expired or malformed entries block."""
+    path = Path(root) / QUARANTINE_FILE
+    if not path.exists():
+        return [], []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], [f"quarantine file unreadable: {exc}"]
+    if not isinstance(data, dict) or data.get("schema") != QUARANTINE_SCHEMA or not isinstance(data.get("entries"), list):
+        return [], [f"quarantine file must be {QUARANTINE_SCHEMA} with an entries list"]
+    today = today or datetime.now(timezone.utc).date()
+    active, problems = [], []
+    for i, entry in enumerate(data["entries"]):
+        if not isinstance(entry, dict) or not all(isinstance(entry.get(k), str) and entry[k].strip()
+                                                  for k in ("test", "owner", "expires", "reason")):
+            problems.append(f"quarantine entry {i}: needs test, owner, expires and reason")
+            continue
+        try:
+            expires = datetime.strptime(entry["expires"], "%Y-%m-%d").date()
+        except ValueError:
+            problems.append(f"quarantine entry {i}: expires must be YYYY-MM-DD")
+            continue
+        if expires < today:
+            problems.append(f"quarantine expired: {entry['test']} (owner {entry['owner']}, expired {entry['expires']})")
+        else:
+            active.append(entry)
+    return active, problems
+
+
 def independence_problem(cfg, profile, run_meta):
     """With verification.independent set, a full or nightly gate needs a verifier other than the builder."""
     if not (cfg.get("verification") or {}).get("independent") or profile not in ("full", "nightly"):
@@ -1411,6 +1443,12 @@ def cmd_verify(args):
     final_snapshot = git_snapshot(root)
     if snapshot.get("present") and final_snapshot.get("diff_sha256") != snapshot.get("diff_sha256"):
         unverified.append("working tree changed during verification; commands may have modified files")
+    quarantined, quarantine_problems = load_quarantine(root)
+    for entry in quarantined:
+        unverified.append(f"quarantined test not verified: {entry['test']} (owner {entry['owner']}, expires {entry['expires']})")
+    if quarantine_problems:
+        blocked = True
+        unverified.extend(quarantine_problems)
     run_meta = run_metadata(args)
     independence = independence_problem(cfg, args.profile, run_meta)
     if independence:

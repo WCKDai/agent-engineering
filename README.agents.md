@@ -95,6 +95,17 @@ Set `"verification": {"independent": true}` in `engineering.json` to require tha
 Identities are declared by the caller, not authenticated: this records separation of duties, it
 does not prove it.
 
+A flaky test is quarantined in `.agents/quarantine.json` (`eng-quarantine/v1`): each entry names the
+`test`, an `owner`, an `expires` date (`YYYY-MM-DD`) and a `reason`. The file only declares the
+quarantine; the repository's test command must exclude the test itself. While active, every
+`verify` lists the test as unverified. An expired or incomplete entry blocks the gate.
+
+```json
+{"schema": "eng-quarantine/v1", "entries": [
+  {"test": "tests/test_net.py::test_retry", "owner": "agent-a", "expires": "2026-11-16", "reason": "times out on shared runners; see #123"}
+]}
+```
+
 Evidence is local and gitignored; CI uploads it. Never edit a record to change a verdict. A check
 that did not run is `skipped` or `blocked`, never `pass`. See `references/evidence.md`.
 
