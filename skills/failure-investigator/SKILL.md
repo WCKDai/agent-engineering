@@ -60,8 +60,10 @@ A flaky test is a failure with an unknown cause, not noise.
 - If it cannot be fixed now, quarantine it in `.agents/quarantine.json` with the `test`, an `owner`,
   an `expires` date and a `reason`, and exclude it in the repository's test command. While
   quarantined, every `eng verify` reports it as unverified; an expired quarantine blocks the gate.
-- A quarantine ends by fixing the cause and removing the entry, or by deleting the test with the
-  owner's approval and a reason. Extending the date needs a new reason.
+- A quarantine ends by fixing the cause, putting the test back in the command and removing the
+  entry. Never delete a quarantined test to end its quarantine. If the test itself is wrong, fix or
+  replace it in a reviewed change that keeps the behavior covered. Extending the date needs a new
+  reason and the owner's approval.
 - Never retry a flaky test until it passes and call the run green.
 
 ## Verification
