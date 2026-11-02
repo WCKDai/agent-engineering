@@ -75,5 +75,38 @@
       "Knowledge lives in version-controlled docs, linked to source and tests.",
       "Promote a harness or policy change only when the same task set improves."
     ]
+  },
+  {
+    "id": "speed-keeps-evidence",
+    "title": "Speed never lowers the evidence level",
+    "lead": "Going faster is welcome; checking less is not. A faster gate must still check the same things.",
+    "points": [
+      "A cache, runner or profile change keeps the same required checks.",
+      "A narrower scope is recorded as narrower, never reported as the full gate.",
+      "Moving a check from the merge gate to nightly is a policy change for the owner.",
+      "If a shortcut cannot keep the evidence level, it is rejected."
+    ]
+  },
+  {
+    "id": "report-by-exception",
+    "title": "Attention is scarce: report by exception",
+    "lead": "Humans read what needs them, not a stream of green. Exceptions are never hidden to keep the list short.",
+    "points": [
+      "Send failures, blocked gates, expiring quarantines, overspend and stalled work; not every pass.",
+      "`eng digest` lists every blocked, skipped or unverified item it finds.",
+      "One named human owns exceptions for each repository.",
+      "An exception without an owner and a next step is not reported yet."
+    ]
+  },
+  {
+    "id": "keep-the-number",
+    "title": "Measure before optimising, and keep the number",
+    "lead": "A before and an after, recorded where the next person can read them.",
+    "points": [
+      "Record the baseline before the change, under the same conditions as the after.",
+      "Keep the numbers with the change: in the pull request, the evidence or the weekly review.",
+      "One change at a time, so the movement can be attributed.",
+      "A number that was not kept cannot justify the next decision."
+    ]
   }
 ]
