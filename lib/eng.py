@@ -287,6 +287,7 @@ def load_config(root):
 def command_specs(config, profile):
     commands = config.get("commands", {}) if config else {}
     raw = commands.get(profile)
+    # full falls back to fast; nightly never falls back: an empty nightly profile is blocked.
     if not raw and profile == "full":
         raw = commands.get("fast")
     specs = []
@@ -1302,6 +1303,37 @@ def run_command(root, spec, logdir, index):
     }
 
 
+def verify_scope(args):
+    if args.scope:
+        return args.scope
+    if args.changed:
+        return f"configured {args.profile} commands; impact against {args.base or 'HEAD'}"
+    return f"configured {args.profile} commands"
+
+
+def run_metadata(args):
+    """Agent run identity. Declared by the caller, not authenticated."""
+    meta = {
+        "id": args.run_id or os.environ.get("ENG_RUN_ID"),
+        "builder": args.builder or os.environ.get("ENG_BUILDER"),
+        "verifier": args.verifier or os.environ.get("ENG_VERIFIER"),
+    }
+    return {k: v for k, v in meta.items() if v}
+
+
+def read_cache_stats(root, path):
+    if not path:
+        return None, None
+    target = Path(path) if Path(path).is_absolute() else Path(root) / path
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"cache statistics not recorded: {exc}"
+    if not isinstance(data, dict):
+        return None, "cache statistics not recorded: expected a JSON object"
+    return data, None
+
+
 def cmd_verify(args):
     root = Path(args.root)
     try:
@@ -1317,6 +1349,7 @@ def cmd_verify(args):
     logdir = edir / eid
     logdir.mkdir(parents=True, exist_ok=True)
     started = now_iso()
+    started_clock = time.monotonic()
     required_failures, unverified = [], []
     commands, security, impact = [], [], None
     blocked = False
@@ -1333,7 +1366,7 @@ def cmd_verify(args):
         print(f"  {mark:<8} {item['name']:<20} {item['duration_s']:>7.2f}s  exit={item['exit_code']}")
         if item["status"] != "pass" and item["required"]:
             required_failures.append(f"command:{item['name']}")
-    if args.profile == "full" and not args.skip_security:
+    if args.profile in ("full", "nightly") and not args.skip_security:
         required, optional = security_plan(cfg)
         for name in required + optional:
             res = run_scanner(root, cfg, name, logdir)
@@ -1366,6 +1399,10 @@ def cmd_verify(args):
     final_snapshot = git_snapshot(root)
     if snapshot.get("present") and final_snapshot.get("diff_sha256") != snapshot.get("diff_sha256"):
         unverified.append("working tree changed during verification; commands may have modified files")
+    run_meta = run_metadata(args)
+    cache, cache_note = read_cache_stats(root, args.cache_stats)
+    if cache_note:
+        unverified.append(cache_note)
     status = "fail" if required_failures else ("blocked" if blocked else "pass")
     code = {"pass": 0, "fail": 1, "blocked": 2}[status]
     finished = now_iso()
@@ -1376,6 +1413,8 @@ def cmd_verify(args):
         "started_at": started,
         "finished_at": finished,
         "profile": args.profile,
+        "scope": verify_scope(args),
+        "duration_s": round(time.monotonic() - started_clock, 2),
         "command": " ".join(sys.argv),
         "git": final_snapshot,
         "git_before": snapshot,
@@ -1396,6 +1435,13 @@ def cmd_verify(args):
             "unverified": list(dict.fromkeys(unverified)),
         },
     }
+    # Optional eng-evidence/v1 fields: present only when supplied, so older records stay valid.
+    if run_meta:
+        record["run"] = run_meta
+    if args.cost is not None:
+        record["cost"] = {"amount": args.cost, "unit": args.cost_unit}
+    if cache is not None:
+        record["cache"] = cache
     path, digest = write_evidence(root, record, logdir)
     print(f"eng verify: {status.upper()} (exit {code})")
     if unverified:
@@ -1964,7 +2010,14 @@ def main(argv=None):
     p.set_defaults(func=cmd_init)
 
     p = sub.add_parser("verify", help="run configured checks and write evidence")
-    p.add_argument("--profile", choices=["fast", "full"], default="fast")
+    p.add_argument("--profile", choices=["fast", "full", "nightly"], default="fast")
+    p.add_argument("--scope", default=None, help="what this run covers (recorded; default: the configured commands)")
+    p.add_argument("--run-id", default=None, help="agent run id (or ENG_RUN_ID)")
+    p.add_argument("--builder", default=None, help="identity that built the change (or ENG_BUILDER)")
+    p.add_argument("--verifier", default=None, help="identity running this verification (or ENG_VERIFIER)")
+    p.add_argument("--cost", type=float, default=None, help="cost of the run, recorded as given")
+    p.add_argument("--cost-unit", default="USD")
+    p.add_argument("--cache-stats", default=None, help="JSON file of compiler-cache statistics to record")
     p.add_argument("--changed", action="store_true", help="include change-impact analysis")
     p.add_argument("--base", default=None, help="base revision for impact")
     p.add_argument("--skip-security", action="store_true")

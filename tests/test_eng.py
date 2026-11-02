@@ -215,6 +215,79 @@ class VerifyTests(EngTestCase):
         self.assertTrue(any("eng-no-such-scanner" in u for u in data["verdict"]["unverified"]))
 
 
+class VerifyTierTests(EngTestCase):
+    def latest(self):
+        return json.loads(sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1].read_text())
+
+    def test_empty_nightly_profile_blocks_instead_of_falling_back(self):
+        self.init_basic()
+        res = eng(self.tmp, "verify", "--profile", "nightly")
+        self.assertEqual(res.returncode, 2, res.stdout)
+        data = self.latest()
+        self.assertEqual(data["profile"], "nightly")
+        self.assertEqual(data["verdict"]["status"], "blocked")
+        self.assertEqual(data["commands"], [])
+
+    def test_nightly_runs_its_own_commands(self):
+        self.init_basic()
+        self.install_config({"fast": [{"name": "fast", "run": "true"}],
+                             "nightly": [{"name": "soak", "run": "false"}]})
+        res = eng(self.tmp, "verify", "--profile", "nightly")
+        self.assertEqual(res.returncode, 1, res.stdout)
+        data = self.latest()
+        self.assertEqual([c["name"] for c in data["commands"]], ["soak"])
+        self.assertEqual(data["verdict"]["status"], "fail")
+
+    def test_scope_and_duration_are_always_recorded(self):
+        self.init_basic()
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        data = self.latest()
+        self.assertEqual(data["scope"], "configured fast commands")
+        self.assertIsInstance(data["duration_s"], float)
+        for optional in ("run", "cost", "cache"):
+            self.assertNotIn(optional, data)
+
+    def test_optional_run_fields_are_hashed_into_the_record(self):
+        self.init_basic()
+        self.repo.write("cache.json", '{"hits": 90, "misses": 10}')
+        res = eng(self.tmp, "verify", "--scope", "crate a only", "--run-id", "r-1", "--builder", "agent-a",
+                  "--verifier", "agent-b", "--cost", "0.42", "--cache-stats", "cache.json")
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        data = self.latest()
+        self.assertEqual(data["scope"], "crate a only")
+        self.assertEqual(data["run"], {"id": "r-1", "builder": "agent-a", "verifier": "agent-b"})
+        self.assertEqual(data["cost"], {"amount": 0.42, "unit": "USD"})
+        self.assertEqual(data["cache"], {"hits": 90, "misses": 10})
+        self.assertEqual(eng(self.tmp, "evidence", "verify").returncode, 0)
+        path = sorted((self.tmp / ".agents" / "evidence").glob("*.json"))[-1]
+        tampered = json.loads(path.read_text())
+        tampered["run"]["verifier"] = "agent-a"
+        path.write_text(json.dumps(tampered))
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("hash mismatch", res.stdout)
+
+    def test_unreadable_cache_stats_are_unverified_not_dropped(self):
+        self.init_basic()
+        res = eng(self.tmp, "verify", "--cache-stats", "missing.json")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        data = self.latest()
+        self.assertNotIn("cache", data)
+        self.assertTrue(any(u.startswith("cache statistics not recorded") for u in data["verdict"]["unverified"]))
+
+    def test_records_without_the_new_fields_still_verify(self):
+        self.init_basic()
+        logdir = self.tmp / ".agents" / "evidence" / "old"
+        logdir.mkdir(parents=True)
+        legacy = {"schema": "eng-evidence/v1", "id": "old", "finished_at": "2026-10-01T00:00:00Z",
+                  "profile": "fast", "commands": [], "verdict": {"status": "pass"}}
+        eng_lib.write_evidence(self.tmp, legacy, logdir)
+        self.assertEqual(eng(self.tmp, "verify").returncode, 0)
+        res = eng(self.tmp, "evidence", "verify")
+        self.assertEqual(res.returncode, 0, res.stdout)
+        self.assertIn("2 record(s)", res.stdout)
+
+
 class ActionPinTests(EngTestCase):
     def workflow(self, ref):
         self.repo.write(".github/workflows/test.yml",
