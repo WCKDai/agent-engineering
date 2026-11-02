@@ -93,7 +93,7 @@
     "lead": "Humans read what needs them, not a stream of green. Exceptions are never hidden to keep the list short.",
     "points": [
       "Send failures, blocked gates, expiring quarantines, overspend and stalled work; not every pass.",
-      "`eng digest` lists every blocked, skipped or unverified item it finds.",
+      "`eng digest` lists every blocked, skipped or unverified item in the latest record of each profile.",
       "One named human owns exceptions for each repository.",
       "An exception without an owner and a next step is not reported yet."
     ]

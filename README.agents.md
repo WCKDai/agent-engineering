@@ -95,7 +95,7 @@ verdict. Each record is linked to the previous one by hash.
 ```
 
 `verify` records the profile, a `scope` (`--scope "<what ran>"`, default the configured commands) and
-the total duration. `--run-id`, `--builder`, `--verifier`, `--cost` and `--cache-stats <json>` add
+the total duration. `--run-id`, `--builder`, `--verifier`, `--cost` and `--cache-stats <file>` (a JSON file) add
 optional fields. Anything outside the recorded scope is unverified.
 
 Set `"verification": {"independent": true}` in `engineering.json` to require that a `full` or
@@ -126,10 +126,15 @@ that did not run is `skipped` or `blocked`, never `pass`. See `references/eviden
 `eng digest` reads each repository's evidence, quarantine file and worktrees and lists only what
 needs a human: the latest `fail` or `blocked` verdict per profile, every `unverified` note in those
 records, a broken or tampered chain, a repository with no evidence, expired or soon-expiring
-quarantines, spend over the cap (`--cost-cap`, or `budget.cost_cap` and `budget.window_days` in
-`engineering.json`) and runs with no recorded cost, and worktrees with no commit or evidence for
-`--stale-hours` (default 24). It exits `0` when nothing needs you and `1` otherwise; `--json` emits
-`eng-digest/v1`. It never drops a blocked, skipped or unverified item to shorten the list. It reads
+quarantines, and worktrees with no commit or evidence for
+`--stale-hours` (default 24). Spend is checked only when a cap is set (`--cost-cap`, or
+`budget.cost_cap` and `budget.window_days` in `engineering.json`): it then reports each unit whose
+total in the window exceeds the cap, and runs in the window with no recorded cost. Without a cap,
+cost is not checked and missing costs are not reported. The cap is an alert threshold; nothing stops
+a run when it is reached. It exits `0` when nothing needs you and `1` otherwise; `--json` emits
+`eng-digest/v1`. Within the latest record of each profile it never drops a blocked, skipped or
+unverified item (skipped checks appear as unverified notes). An exception in an older record that a
+newer record of the same profile superseded is not repeated. It reads
 local files only; collecting CI evidence artifacts into those directories is the caller's job.
 
 ## Worktrees and parallelism
