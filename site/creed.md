@@ -1,6 +1,6 @@
 # CREED — engineering for agents
 
-Canonical guide: https://creed.sh/creed.md
+Canonical guide: https://creed.sh/creed.md · version 1.2.0
 
 Read this before a nontrivial engineering task. Read AGENTS.md first: it is the
 repository's authoritative policy. Its commands and the user's authorized scope override
