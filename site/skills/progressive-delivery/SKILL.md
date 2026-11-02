@@ -36,7 +36,8 @@ a revert that does not need debugging first.
 Changing production rollout configuration is a production change and follows the repository's
 approval rule. Never change the hashing key or algorithm of a rollout in progress: it reshuffles
 every cohort. Never let a long-running unit of work (a job, a session, a workflow) see a flag flip
-back and forth: evaluate per stable entity. Never ship a flag without a default. Never combine a
+back and forth: evaluate per stable entity, and have long-running work read the value once when it
+starts and keep it until it finishes. Never ship a flag without a default. Never combine a
 rollback with a fix: revert first, then fix forward in a new change.
 
 ## Workflow
@@ -49,8 +50,9 @@ rollback with a fix: revert first, then fix forward in a new change.
 4. Roll out through configuration review: internal users, then a small percentage, then wider.
    Write the stop condition before each step (error rate, latency, a named metric).
 5. Keep each merged change one squashed, independently revertible commit. When a merged change
-   breaks production, revert it first (`git revert <sha>`, message "This reverts commit <sha>."),
-   then investigate.
+   breaks production, revert it first (`git revert <sha>`, message "This reverts commit <sha>.";
+   in a repository that merges with merge commits, `git revert -m 1 <merge sha>`), then
+   investigate.
 6. After full rollout and a quiet period, remove the flag in an ordered sequence: stop reading it
    in code, then delete the configuration, then delete the registration, each as its own change.
 
@@ -60,7 +62,9 @@ rollback with a fix: revert first, then fix forward in a new change.
 - The cohort assignment function is deterministic for a key, and a test pins that raising the
   percentage keeps existing members in.
 - Each rollout step has a reviewed configuration change and a recorded health check.
-- The revert of the change applies cleanly to the current main (`git revert --no-commit` dry run).
+- The revert applies cleanly to the current main, checked in a throwaway worktree
+  (`git worktree add <tmp> origin/main && git -C <tmp> revert --no-commit <sha>`, then remove the
+  worktree), or with `git revert --no-commit <sha>` followed by `git revert --abort`.
 
 ## Failure and escalation
 

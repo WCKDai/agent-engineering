@@ -24,10 +24,11 @@ values. Reviews reduce risk; the author, not the reviewer, owns correctness.
 
 ## Outputs
 
-- Findings with file and line, each with a severity: **blocking** (must not merge without it),
-  **should fix**, or **nit** (approve anyway).
-- For each finding, the concrete scenario that goes wrong.
-- A verdict: approve, approve with notes, or request changes.
+- A difference list: each behavior difference from the existing equivalent code, failure-path
+  case and surface, with a disposition (intended, finding, or not applicable and why).
+- Findings, each with file, line, the concrete scenario that goes wrong, and a severity on Sentry's
+  LOGAF scale: high (must not merge without it), medium (worth fixing) or low (nit).
+- The verdict and its evidence are recorded as independent-verification defines them.
 
 ## Permissions and restrictions
 
@@ -45,15 +46,17 @@ on risk. A test that asserts a behavior shows the author intended it, not that i
 3. Walk every surface: each entry point, client, adapter and agent tool that can reach the
    behavior, plus the reverse operation (undo, disable, disconnect). A path that cannot be reversed
    is a defect unless intended. Record a decision for each surface, even "not supported here".
-4. Check the tests: mentally revert the implementation. Would each test still pass? If so, it does
-   not cover the change.
+4. Check the tests with test-design's mental-revert check; a test that would still pass with the
+   implementation reverted does not cover the change.
 5. Check side effects, not only output: logs, database rows, queued jobs, emitted events. A clean
    UI over an error-filled log is a failure.
-6. Write findings with severity and scenario. Approve when only nits remain.
+6. Write findings with severity and scenario, and hand the verdict to independent-verification.
+   Only low (nit) findings remaining does not block approval.
 
 ## Verification
 
-- Each finding names a file and line, a scenario and a severity.
+- Each finding names a file and line, a scenario and a LOGAF severity.
+- Every entry in the difference list has a disposition.
 - The comparison with the existing equivalent code is recorded, or its absence is stated.
 - Retry, duplicate and lost-response cases were considered for each new state-changing operation.
 - The surfaces list was walked and each entry has a decision.
@@ -68,16 +71,16 @@ on risk. A test that asserts a behavior shows the author intended it, not that i
 
 ## Done when
 
-Every behavior difference from the existing equivalent is explained or filed, failure paths and
-surfaces were walked, tests were checked against a mental revert, side effects were inspected, and
-the verdict is recorded with severities.
+The difference list covers the existing equivalent code, every failure-path case and every
+surface, each with a disposition; tests passed the mental-revert check; side effects were
+inspected; and the findings went to independent-verification for the verdict.
 
 ## Sources
 
 - Temporal, behavior-first review that compares a change with existing code doing the same job and
   questions tests that would pass with the implementation reverted:
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/.github/copilot-instructions.md
-- Sentry, reviews reduce risk, the author owns correctness, severity labels:
+- Sentry, reviews reduce risk, the author owns correctness, the LOGAF severity scale:
   https://develop.sentry.dev/engineering-practices/code-review/
 - t3code, the "hit every surface" checklist and "a one-way door is a bug":
   https://github.com/pingdotgg/t3code/blob/47f2c8d29e981c7723467efe137ee19e91df924e/AGENTS.md

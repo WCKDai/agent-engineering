@@ -4,7 +4,7 @@
 
 Read first: https://creed.sh/creed.md
 
-Source: `1c53574` · schema `3ad3ed1572db674b` · kit version `1.3.0`.
+Source: `9da5fe3` · schema `4bbdc60bae7cd08a` · kit version `1.3.0`.
 
 Homepage: https://creed.sh
 Repository: https://github.com/WCKDai/agent-engineering
@@ -103,7 +103,7 @@ Change persisted schemas and data without downtime or a one-way door. Use when a
 Source: https://creed.sh/skills/safe-migrations/SKILL.md
 
 ### compatibility-and-deprecation
-Keep old and new versions working together across a rollout, and retire interfaces on a timeline instead of breaking them. Use when a change touches a wire protocol, stored message, public API, SDK or plugin surface, or anything two versions of the software exchange during an upgrade. Use contract-guardian to inventory and classify the change; use safe-migrations for database schemas.
+Prove that old and new versions work together across a rollout, and retire interfaces on a timeline. Use when two versions exchange data during an upgrade (wire protocols, stored messages, public or SDK/plugin APIs, separately deployed frontend and backend), or when deprecating an interface. Load contract-guardian first for the contract inventory, fixtures and change classification; use safe-migrations for database schemas.
 Source: https://creed.sh/skills/compatibility-and-deprecation/SKILL.md
 
 ### progressive-delivery

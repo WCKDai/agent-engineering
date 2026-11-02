@@ -6,10 +6,10 @@
   "repository": "https://github.com/WCKDai/agent-engineering",
   "version": "1.3.0",
   "source": {
-    "commit": "1c53574",
-    "committed_at": "2026-11-02T14:00:15+01:00",
+    "commit": "9da5fe3",
+    "committed_at": "2026-11-02T14:09:41+01:00",
     "dirty": false,
-    "content_sha256": "3ad3ed1572db674b46f078efa7fb6d278db520c2e8db97f4fad9d887b335296a"
+    "content_sha256": "4bbdc60bae7cd08a6be22fb967f0556b34693f5da2cb7e45eb4fb93fb536418a"
   },
   "start": {
     "read_first": [
@@ -240,7 +240,7 @@
     {
       "id": "compatibility-and-deprecation",
       "name": "Compatibility and deprecation",
-      "description": "Keep old and new versions working together across a rollout, and retire interfaces on a timeline instead of breaking them. Use when a change touches a wire protocol, stored message, public API, SDK or plugin surface, or anything two versions of the software exchange during an upgrade. Use contract-guardian to inventory and classify the change; use safe-migrations for database schemas.",
+      "description": "Prove that old and new versions work together across a rollout, and retire interfaces on a timeline. Use when two versions exchange data during an upgrade (wire protocols, stored messages, public or SDK/plugin APIs, separately deployed frontend and backend), or when deprecating an interface. Load contract-guardian first for the contract inventory, fixtures and change classification; use safe-migrations for database schemas.",
       "source": "skills/compatibility-and-deprecation/SKILL.md",
       "raw_url": "https://creed.sh/skills/compatibility-and-deprecation/SKILL.md",
       "phase": "plan",

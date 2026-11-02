@@ -57,7 +57,8 @@ evals.
    only until the check exists.
 8. Budget text that models read: record its size and fail CI when it grows without an approving
    label. Test guidance changes with evals: add the case before the change, show it fails on the
-   old text, include controls.
+   old text, include controls. Model output varies, so run each case several times (at least
+   three) and count a case as failing when half or more of its runs fail.
 9. For an agent in CI: give it read-only tools, one question, a structured output schema and a
    single updated comment. Skip forks and bots. Redact tokens from anything it posts.
 

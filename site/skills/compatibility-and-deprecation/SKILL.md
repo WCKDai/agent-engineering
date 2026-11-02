@@ -1,87 +1,90 @@
 ---
 name: compatibility-and-deprecation
-description: Keep old and new versions working together across a rollout, and retire interfaces on a timeline instead of breaking them. Use when a change touches a wire protocol, stored message, public API, SDK or plugin surface, or anything two versions of the software exchange during an upgrade. Use contract-guardian to inventory and classify the change; use safe-migrations for database schemas.
+description: Prove that old and new versions work together across a rollout, and retire interfaces on a timeline. Use when two versions exchange data during an upgrade (wire protocols, stored messages, public or SDK/plugin APIs, separately deployed frontend and backend), or when deprecating an interface. Load contract-guardian first for the contract inventory, fixtures and change classification; use safe-migrations for database schemas.
 ---
 
 # Compatibility and deprecation
 
-During every deploy, version N and N-1 run side by side, and clients lag servers for months. A
-change is compatible only if it was proven from the real output on both sides, not by reading the
-diff. Removal is a process with dates, not an edit.
+contract-guardian says what the contract is and whether a change breaks it. This skill covers what
+happens over time: N and N-1 running side by side during every deploy, clients lagging servers for
+months, and removal as a dated process instead of an edit. Compatibility is proven from real
+artifacts and real old states, not by reading the diff.
 
 ## Activate when
 
-- A change alters a protobuf/GraphQL/OpenAPI schema, an event, a queue message or an RPC.
-- A public or SDK/plugin API gains, moves or loses a route, type, field or default.
 - Producer and consumer of a change deploy separately (frontend and backend, server and client,
-  service and worker).
-- An interface is to be deprecated or removed.
+  service and worker), or old and new instances share state during a rollout.
+- Behavior that stored data or in-flight work depends on is changing.
+- New public surface is being added, or existing surface is being deprecated or removed.
 
 ## Inputs and assumptions
 
+- contract-guardian's inventory and classification (compatible, conditionally compatible,
+  breaking) for the change.
 - The repository's compatibility promise: supported versions, upgrade order, deprecation window.
-- A way to produce each side's real contract: generated schema, introspection, build image at the
-  merge base and at the head.
-- Which units deploy atomically and which do not.
+- A way to build each side's real contract artifact at the merge base and at the head.
 
 ## Outputs
 
-- A machine diff of the contract between the merge base and the head, with its classification.
-- For new surface: where it lives while experimental, and the condition for graduating it.
-- For a break: the deprecated alias or version kept, the removal date, how callers are warned,
+- A machine diff of the contract between merge base and head, attached to the PR.
+- The deploy order for non-atomic boundaries.
+- For new surface: where it lives while experimental and the condition for graduating it.
+- For a deprecation: the deprecated alias kept, the removal version or date, how callers are warned,
   and the list of known callers.
-- The deploy order when producer and consumer ship separately.
+- Evidence that an N-1 component worked with the N component.
 
 ## Permissions and restrictions
 
-Do not remove or rename shipped public surface without a deprecation period the owner approved.
-Do not hand-write deprecation aliases that a generator can produce. Do not treat a diff tool that
-errors or cannot compare as a pass. Do not ship a change that needs both sides deployed at the
-same instant. An immediate removal needs an incident or a blocking vulnerability and the owner's
-sign-off.
+Do not remove shipped public surface without a deprecation period the owner approved; an immediate
+removal needs an incident or a blocking vulnerability and the owner's sign-off. Do not hand-write
+aliases a generator can produce. A diff tool that errors or cannot compare is a failure, not a
+pass. Do not ship a change that needs both sides deployed at the same instant.
 
 ## Workflow
 
 1. Name the boundary and both sides. If they do not deploy atomically, plan two changes: the side
-   that must understand the new form ships first (usually the consumer/reader, or the backend
-   before the frontend that calls it).
-2. Produce the contract at the merge base and at the head from the real artifacts (built schema
-   images, introspection of a running server, generated OpenAPI). Diff them with a tool that
-   understands the format, for example `buf breaking <head image> --against <base image>` for
-   protobuf, a GraphQL schema differ, or an OpenAPI differ. Commit no hand-maintained copy.
-3. Classify every finding: additive, dangerous, breaking. A removal of something already marked
-   deprecated is expected; an undeprecated removal is breaking.
-4. New public surface starts experimental: a clearly unstable path, namespace or flag, with a test
-   that pins the naming so it cannot leak into the stable namespace by accident.
-5. Behavior that existing stored data or in-flight work depends on changes only behind a version
-   recorded with that data. New behavior defaults off until at least one release after the reader
-   ships, so a rollback to N-1 can still read what N wrote.
-6. For a deprecation: remove in-house usage first; find the remaining callers; announce a date;
-   warn in-band (a response header, a log line, a compiler deprecation); keep a generated alias
-   until the stated release. After the date, fail intermittently before failing always, so the
-   change reads as a deprecation and not an outage.
-7. Run old and new versions together against the same state where the project allows it (a
-   mixed-version cluster, an N-1 client against the N server, replay of N-1 recorded data).
+   that must understand the new form ships first (the reader, or the backend before the frontend
+   that calls it).
+2. Build the contract at the merge base and at the head from real artifacts (built schema images,
+   introspection of a running server, generated OpenAPI) and diff them with a format-aware tool,
+   for example `buf breaking <head image> --against <base image>` for protobuf, or a GraphQL or
+   OpenAPI differ. Removing something already deprecated is expected; anything else breaking goes
+   back to contract-guardian's decision.
+3. New public surface starts experimental: an unstable path, namespace or flag, with a test that
+   pins the naming so it cannot leak into the stable namespace by accident.
+4. Behavior that stored data or in-flight work depends on changes only behind a version recorded
+   with that data. The new behavior defaults off until at least one release after the reader ships,
+   so a rollback to N-1 can still read what N wrote.
+5. Run old and new together: replay states recorded by N-1 (see test-design), run an N-1 client
+   against the N server, or a mixed-version cluster where the project has one.
+6. Deprecate on a timeline: remove in-house usage first, find the remaining callers, announce the
+   removal version or date, warn in-band, and keep a generated alias until then.
+   - Network APIs (HTTP, RPC): warn in responses (for example deprecation headers); after the
+     date, fail intermittently before failing always, so the change reads as a deprecation and
+     not an outage.
+   - SDK, library and plugin APIs: mark the symbol deprecated so the compiler or runtime warns,
+     and remove it only in the release the versioning policy allows (usually the next major, or
+     the stated minor).
 
 ## Verification
 
-- The contract diff ran on real artifacts from both revisions and its output is attached.
-- Every breaking finding has an approved deprecation path or is reverted.
-- An N-1 component worked against the N component (test, replay or mixed run), not only on paper.
-- Generated aliases and clients are reproducible from the source (regenerate and `git diff
-  --exit-code`).
+- The contract diff ran on real artifacts from both revisions; its output is attached.
+- Every breaking finding is reverted or has contract-guardian's approved decision.
+- An N-1/N combination ran (replay, old client, or mixed cluster), not only on paper.
+- Generated aliases and clients are reproducible: regenerate and `git diff --exit-code`.
 
 ## Failure and escalation
 
-- No compatibility policy is written down: stop and ask the owner; do not assume "nobody uses it".
-- The differ cannot parse one side: the check is blocked, not passed; fix the build of that side.
-- A required change cannot be made compatible: escalate with the caller list and a proposed
-  window; land nothing breaking until the owner decides.
+- The differ cannot build or parse one side: the check is blocked; fix that side's build.
+- No compatibility policy exists: stop and ask the owner (contract-guardian).
+- A change cannot be made compatible: escalate with the caller list and a proposed window; land
+  nothing breaking until the owner decides.
 
 ## Done when
 
-The contract diff is clean or every break has an approved, dated, in-band-warned deprecation; deploy
-order is stated for non-atomic boundaries; an N-1/N combination was exercised.
+The contract diff ran on real artifacts and is clean or approved, the deploy order is stated, an
+N-1/N combination was exercised, and any deprecation has a removal date or version, in-band
+warnings and a generated alias.
 
 ## Sources
 
@@ -93,6 +96,6 @@ order is stated for non-atomic boundaries; an N-1/N combination was exercised.
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/develop/buf-breaking.sh,
   https://github.com/temporalio/sdk-go/blob/3ad2ee1f2d7036c22583c7313d4f02b53f8f77f5/internal/internal_flags.go,
   https://github.com/temporalio/temporal/blob/49b2e1e954022de8ab4325dd8ec482f753ba6173/tests/mixedbrain/mixed_brain_test.go
-- Sentry, non-atomic frontend/backend deploys and the API deprecation policy with blackouts:
+- Sentry, non-atomic frontend/backend deploys and the HTTP API deprecation policy with blackouts:
   https://github.com/getsentry/sentry/blob/c692fefae8eaee263af3491f30747bae2eb2d756/AGENTS.md,
   https://develop.sentry.dev/backend/api/deprecation-policy/
