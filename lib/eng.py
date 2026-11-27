@@ -201,12 +201,18 @@ def tracked_files(root, include_untracked=False):
             if extra.ok:
                 files += [f for f in extra.out.split("\0") if f]
         return [f for f in dict.fromkeys(files) if not skipped_path(f)]
+    # No git (an archive, a synced copy): walk the tree and skip what skipped_path skips, as the
+    # list above does. Pruning by name alone missed `.agents/evidence`, a path, so a copy rescanned
+    # every earlier run's evidence, its gitleaks scan trees included.
     out = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_PARTS]
+        here = Path(dirpath).relative_to(root)
+        dirnames[:] = [d for d in dirnames if not skipped_path(here / d)]
         for name in filenames:
-            p = Path(dirpath) / name
-            out.append(str(p.relative_to(root)))
+            f = here / name
+            if skipped_path(f):
+                continue
+            out.append(str(f))
             if len(out) >= 50000:
                 return out
     return out
