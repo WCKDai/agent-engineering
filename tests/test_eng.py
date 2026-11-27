@@ -10,6 +10,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import unittest.mock
 import importlib.util
 from pathlib import Path
 
@@ -566,6 +567,35 @@ class LockfileDiscovery(unittest.TestCase):
         explicit = [fallback[i + 1] for i, a in enumerate(fallback) if a == "-L"]
         self.assertEqual(explicit, [":Cargo.lock", ":services/api:v2/package-lock.json"])
         self.assertNotIn(str(self.tmp), fallback, "the fallback must not re-run the walk")
+
+
+class NoGitWalk(unittest.TestCase):
+    """A copy without git (an archive, a synced folder) is walked: it skips what a checkout's file list skips."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="eng-nogit-"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.repo = Repo(self.tmp)
+        # No repository above the copy may answer for it either.
+        ceiling = unittest.mock.patch.dict(os.environ, {"GIT_CEILING_DIRECTORIES": str(self.tmp.parent)})
+        ceiling.start()
+        self.addCleanup(ceiling.stop)
+        self.repo.write("src/app.py", "print('hi')\n")
+        self.repo.write(".agents/engineering.json", "{}\n")
+        # An earlier run's evidence: its gitleaks scan tree holds hard links of what that run scanned.
+        self.repo.write(".agents/evidence/20261127T000547Z-nogit/gitleaks-tree/src/app.py", "print('hi')\n")
+        self.repo.write(".agents/evidence/20261127T000547Z-nogit/gitleaks.json", "[]\n")
+        self.repo.write("web/node_modules/dep/index.js", "x\n")
+        self.assertFalse(eng_lib.git(self.tmp, "rev-parse", "--git-dir").ok, "the copy must have no git")
+
+    def test_earlier_evidence_is_not_walked_again(self):
+        self.assertEqual(sorted(eng_lib.tracked_files(self.tmp)), [".agents/engineering.json", "src/app.py"])
+
+    def test_a_scan_tree_holds_no_earlier_scan_tree(self):
+        dest = self.tmp / ".agents" / "evidence" / "20261127T010000Z-nogit" / "gitleaks-tree"
+        eng_lib.make_tracked_tree(self.tmp, dest)
+        found = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*") if p.is_file())
+        self.assertEqual(found, [".agents/engineering.json", "src/app.py"])
 
 
 if __name__ == "__main__":
